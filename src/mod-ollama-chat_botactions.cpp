@@ -231,9 +231,10 @@ std::string BuildBotActionPrompt(Player* bot, Player* sender, const std::string&
       << "Nearby units (use the exact guid number shown; do not invent one):\n"
       << worldState
       << senderName << " is standing at x=" << px << " y=" << py << " z=" << pz << ".\n\n"
-      << "MOST messages are just conversation, banter, or questions — for those set action=\"none\" "
-      << "and simply reply in \"say\" like a person would (answer questions, react, joke). "
-      << "ONLY choose a physical action when " << senderName << " clearly asks for that specific thing right now:\n"
+      << "Decide what to do. If " << senderName << " gives you an order or clearly asks you to DO "
+      << "something physical (attack/kill something, follow, come, stay, sit, an emote, etc.), then DO "
+      << "IT — pick that action, don't just talk about it. If it is only conversation, banter, or a "
+      << "question, use action=\"none\" and reply.\n"
       << "- attack a unit: action=\"attack\", guid=<that unit's guid number>.\n"
       << "- follow " << senderName << " around: action=\"follow\".\n"
       << "- come over to " << senderName << " (walk up and stop near them, NOT follow): action=\"come\".\n"
@@ -244,8 +245,9 @@ std::string BuildBotActionPrompt(Player* bot, Player* sender, const std::string&
       << "(any standard WoW emote, plus sit, sleep, stand, dismount: dance, bow, wave, rude, train, "
       << "wink, kneel, cheer, laugh, salute, flex, point, thank, hug, roar, clap, chicken, victory). "
       << "Do NOT emote just because you are chatting about something.\n"
-      << "When in doubt, use action=\"none\" and just talk. Always include a natural, in-character \"say\" "
-      << "of ONE or TWO short sentences — speak like a real person in chat, do not ramble.";
+      << "Always include a natural, in-character \"say\" of ONE or TWO short sentences — grounded and "
+      << "on-topic, like a real person in chat. Do not ramble, repeat yourself, or invent absurd "
+      << "scenarios; vary your wording and don't start every reply the same way.";
     return p.str();
 }
 

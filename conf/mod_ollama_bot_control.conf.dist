@@ -56,7 +56,7 @@ OllamaBotControl.Model = llama3.2:1b
 #     |     50     |   ~35–38      | Slightly longer reply            |
 #     |     75     |   ~50–60      | Long quest/lore text             |
 #     |    100+    |   70–80+      | Multi-paragraph (not typical)    |
-OllamaBotControl.NumPredict = 100
+OllamaBotControl.NumPredict = 300
 
 # OllamaBotControl.Temperature
 #     Description: Controls the "creativity" or randomness of the model’s output.
@@ -82,7 +82,7 @@ OllamaBotControl.TopP = 0.95
 #                  1.1 is the Ollama default.
 #     Example:     OllamaBotControl.RepeatPenalty = 1.2
 #     Default:     1.1
-OllamaBotControl.RepeatPenalty = 1.1
+OllamaBotControl.RepeatPenalty = 1.4
 
 # OllamaBotControl.NumCtx
 #     Description: Maximum context length (in tokens) sent to the model.
