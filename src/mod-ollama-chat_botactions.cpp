@@ -49,6 +49,25 @@ void SetBotActionOptIn(Player* bot, bool optedIn)
     g_BotActionOptIn[bot->GetGUID().GetRawValue()] = optedIn;
 }
 
+// --- Per-bot custom personality (free text; world thread; in-memory) ----------
+static std::unordered_map<uint64_t, std::string> g_BotPersona;
+
+void SetBotPersona(Player* bot, const std::string& text)
+{
+    if (!bot)
+        return;
+    if (text.empty())
+        g_BotPersona.erase(bot->GetGUID().GetRawValue());
+    else
+        g_BotPersona[bot->GetGUID().GetRawValue()] = text;
+}
+
+static std::string GetBotPersona(uint64_t botGuid)
+{
+    auto it = g_BotPersona.find(botGuid);
+    return it == g_BotPersona.end() ? std::string() : it->second;
+}
+
 bool SenderHasEngagedBot(Player* sender)
 {
     if (!sender)
@@ -239,6 +258,9 @@ std::string BuildBotActionPrompt(Player* bot, Player* sender, const std::string&
     p << "You are " << botName << ", a friendly companion adventuring alongside the players. "
       << "Act like a real player — chat naturally, with personality, and remember what people tell "
       << "you — but you are loyal and you DO what your companions ask of you.\n";
+    std::string persona = GetBotPersona(botGuid);
+    if (!persona.empty())
+        p << "Your personality — stay in character as this in everything you say: " << persona << "\n";
     if (!convo.empty())
         p << "The conversation around you so far (each line is tagged with who said it — "
           << "remember who said what, including OTHER people besides " << senderName

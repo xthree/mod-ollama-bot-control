@@ -41,7 +41,8 @@ ChatCommandTable OllamaChatConfigCommand::GetCommands() const
         { "personality", ollamaPersonalityCommandTable },
         { "optin",       HandleOllamaOptInCommand,     SEC_ADMINISTRATOR, Console::Yes },
         { "optout",      HandleOllamaOptOutCommand,    SEC_ADMINISTRATOR, Console::Yes },
-        { "optstatus",   HandleOllamaOptStatusCommand, SEC_ADMINISTRATOR, Console::Yes }
+        { "optstatus",   HandleOllamaOptStatusCommand, SEC_ADMINISTRATOR, Console::Yes },
+        { "persona",     HandleOllamaPersonaCommand,   SEC_ADMINISTRATOR, Console::Yes }
     };
 
     static ChatCommandTable commandTable =
@@ -468,5 +469,19 @@ bool OllamaChatConfigCommand::HandleOllamaOptStatusCommand(ChatHandler* handler,
     bool optedIn = IsBotActionOptIn(bot);
     handler->SendSysMessage(fmt::format("OllamaBotControl: Bot '{}' is {} LLM action control.",
                             botName, optedIn ? "opted IN to" : "opted OUT of"));
+    return true;
+}
+
+bool OllamaChatConfigCommand::HandleOllamaPersonaCommand(ChatHandler* handler, std::string botName, Acore::ChatCommands::Tail personaText)
+{
+    Player* bot = ResolveBotByName(handler, botName);
+    if (!bot)
+        return true;
+    std::string text(personaText);
+    SetBotPersona(bot, text);
+    if (text.empty())
+        handler->SendSysMessage(fmt::format("OllamaBotControl: cleared {}'s personality.", botName));
+    else
+        handler->SendSysMessage(fmt::format("OllamaBotControl: {} now plays the part: {}", botName, text));
     return true;
 }

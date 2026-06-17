@@ -20,6 +20,7 @@ public:
     static bool HandleOllamaOptInCommand(ChatHandler* handler, std::string botName);
     static bool HandleOllamaOptOutCommand(ChatHandler* handler, std::string botName);
     static bool HandleOllamaOptStatusCommand(ChatHandler* handler, std::string botName);
+    static bool HandleOllamaPersonaCommand(ChatHandler* handler, std::string botName, Acore::ChatCommands::Tail personaText);
 };
 
 #endif // MOD_OLLAMA_CHAT_COMMAND_H

@@ -24,6 +24,9 @@ void SetBotActionOptIn(Player* bot, bool optedIn);
 // command words like "follow"/"stay" bypass the chat command-word blacklist).
 bool SenderHasEngagedBot(Player* sender);
 
+// Set a free-text personality for a bot (empty clears it). Fed into the prompt.
+void SetBotPersona(Player* bot, const std::string& text);
+
 // Build the LLM action prompt (world thread; reads nearby world state).
 std::string BuildBotActionPrompt(Player* bot, Player* sender, const std::string& message);
 
