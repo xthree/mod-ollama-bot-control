@@ -1327,28 +1327,51 @@ void PlayerBotChatHandler::ProcessChat(Player* player, uint32_t /*type*/, uint32
         }
         else
         {
+            // No bot named. A bot actively under this player's control is the one
+            // they're talking to ("ok this one now") — route to it without requiring
+            // its name, instead of a random chance roll.
+            std::vector<Player*> controlled;
             for (Player* bot : candidateBots)
             {
-                if (g_DisableRepliesInCombat && bot->IsInCombat())
-                {
-                    if(g_DebugEnabled)
-                    {
-                        LOG_INFO("server.loading", "[Ollama Chat] Bot {} skipped - in combat", bot->GetName());
-                    }
+                if (!bot)
                     continue;
-                }
-                uint32_t roll = urand(0, 99);
-                if (roll < chance)
-                {
+                PlayerbotAI* bAI = PlayerbotsMgr::instance().GetPlayerbotAI(bot);
+                if (IsBotActionOptIn(bot) && bAI && bAI->IsExternallyControlled() && bAI->GetMaster() == player)
+                    controlled.push_back(bot);
+            }
+
+            if (!controlled.empty())
+            {
+                for (Player* bot : controlled)
                     finalCandidates.push_back(bot);
-                    if(g_DebugEnabled)
-                    {
-                        LOG_INFO("server.loading", "[Ollama Chat] Bot {} PASSED chance roll ({} < {}%)", bot->GetName(), roll, chance);
-                    }
-                }
-                else if(g_DebugEnabled)
+                if (g_DebugEnabled)
+                    LOG_INFO("server.loading", "[OllamaBotControl] {} engaged bot(s) responding to unaddressed message", controlled.size());
+            }
+            else
+            {
+                for (Player* bot : candidateBots)
                 {
-                    LOG_INFO("server.loading", "[Ollama Chat] Bot {} FAILED chance roll ({} >= {}%)", bot->GetName(), roll, chance);
+                    if (g_DisableRepliesInCombat && bot->IsInCombat())
+                    {
+                        if(g_DebugEnabled)
+                        {
+                            LOG_INFO("server.loading", "[Ollama Chat] Bot {} skipped - in combat", bot->GetName());
+                        }
+                        continue;
+                    }
+                    uint32_t roll = urand(0, 99);
+                    if (roll < chance)
+                    {
+                        finalCandidates.push_back(bot);
+                        if(g_DebugEnabled)
+                        {
+                            LOG_INFO("server.loading", "[Ollama Chat] Bot {} PASSED chance roll ({} < {}%)", bot->GetName(), roll, chance);
+                        }
+                    }
+                    else if(g_DebugEnabled)
+                    {
+                        LOG_INFO("server.loading", "[Ollama Chat] Bot {} FAILED chance roll ({} >= {}%)", bot->GetName(), roll, chance);
+                    }
                 }
             }
         }

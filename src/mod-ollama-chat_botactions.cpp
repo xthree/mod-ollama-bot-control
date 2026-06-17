@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
+#include <deque>
 #include <mutex>
 #include <queue>
 #include <sstream>
@@ -41,6 +42,30 @@ void SetBotActionOptIn(Player* bot, bool optedIn)
     if (!bot)
         return;
     g_BotActionOptIn[bot->GetGUID().GetRawValue()] = optedIn;
+}
+
+// --- Per-bot short-term action memory (world thread only) ---------------------
+// A few recent actions so an ambiguous command ("ok this one now") is read in the
+// context of what the bot has been doing ("we've been attacking wolves").
+static std::unordered_map<uint64_t, std::deque<std::string>> g_BotRecentActions;
+
+static void RecordBotAction(uint64_t botGuid, const std::string& desc)
+{
+    auto& dq = g_BotRecentActions[botGuid];
+    dq.push_back(desc);
+    while (dq.size() > 5)
+        dq.pop_front();
+}
+
+static std::string RecentActionsText(uint64_t botGuid)
+{
+    auto it = g_BotRecentActions.find(botGuid);
+    if (it == g_BotRecentActions.end() || it->second.empty())
+        return "";
+    std::string s;
+    for (const std::string& d : it->second)
+        s += "- " + d + "\n";
+    return s;
 }
 
 // ---------------------------------------------------------------------------
@@ -104,10 +129,15 @@ std::string BuildBotActionPrompt(Player* bot, Player* sender, const std::string&
     float py = sender ? sender->GetPositionY() : 0.0f;
     float pz = sender ? sender->GetPositionZ() : 0.0f;
 
+    std::string recent = RecentActionsText(bot ? bot->GetGUID().GetRawValue() : 0);
+
     std::ostringstream p;
     p << "You are " << botName << ", a World of Warcraft character. "
-      << senderName << ", your companion, said to you: \"" << message << "\".\n"
-      << "Nearby units (use the exact guid number shown; do not invent one):\n"
+      << senderName << ", your companion, said to you: \"" << message << "\".\n";
+    if (!recent.empty())
+        p << "What you have been doing recently (use this to read short or vague requests "
+          << "like \"this one now\" or \"get it\" in context):\n" << recent << "\n";
+    p << "Nearby units (use the exact guid number shown; do not invent one):\n"
       << worldState
       << senderName << " is standing at x=" << px << " y=" << py << " z=" << pz << ".\n\n"
       << "Choose ONE action in response and fill the matching field:\n"
@@ -280,6 +310,7 @@ namespace
         botAI->GetAiObjectContext()->GetValue<GuidVector>("prioritized targets")->Set({ target->GetGUID() });
         botAI->ChangeEngine(BOT_STATE_COMBAT);
         bot->Attack(target, bot->IsWithinMeleeRange(target));
+        RecordBotAction(bot->GetGUID().GetRawValue(), "attacked " + target->GetName());
     }
 
     void ExecuteBotAction(const PendingBotAction& pa)
@@ -332,6 +363,8 @@ namespace
             if (sender)
                 botAI->SetMaster(sender);
             botAI->DoSpecificAction("follow chat shortcut");
+            RecordBotAction(bot->GetGUID().GetRawValue(),
+                            "started following " + (sender ? sender->GetName() : std::string("the player")));
         }
         else if (cmd.type == "moveto")
         {
@@ -346,6 +379,7 @@ namespace
             {
                 bot->GetMotionMaster()->Clear();
                 bot->GetMotionMaster()->MovePoint(0, x, y, z);
+                RecordBotAction(bot->GetGUID().GetRawValue(), "moved to a location");
             }
         }
         else if (cmd.type == "emote")
@@ -356,6 +390,7 @@ namespace
             if (name.empty())
                 name = "wave";
             botAI->DoSpecificAction("emote", Event(), false, name);
+            RecordBotAction(bot->GetGUID().GetRawValue(), "performed the " + name + " emote");
         }
 
         if (g_DebugEnabled)
