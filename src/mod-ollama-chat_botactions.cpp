@@ -68,6 +68,42 @@ static std::string RecentActionsText(uint64_t botGuid)
     return s;
 }
 
+// --- Conversation memory (shared with the chat path's g_BotConversationHistory) -
+// Reusing the same store means an opted-in bot remembers what was said whether the
+// message went through the chat path or the action path (so it can recall e.g. a
+// name the player told it earlier).
+static std::string ConversationContext(uint64_t botGuid, uint64_t playerGuid, const std::string& playerName)
+{
+    if (!g_EnableChatHistory)
+        return "";
+    std::lock_guard<std::mutex> lock(g_ConversationHistoryMutex);
+    auto botIt = g_BotConversationHistory.find(botGuid);
+    if (botIt == g_BotConversationHistory.end())
+        return "";
+    auto pIt = botIt->second.find(playerGuid);
+    if (pIt == botIt->second.end() || pIt->second.empty())
+        return "";
+    std::string s;
+    for (const auto& e : pIt->second)
+    {
+        s += playerName + ": " + e.first + "\n";
+        s += "You: " + e.second + "\n";
+    }
+    return s;
+}
+
+static void RecordConversation(uint64_t botGuid, uint64_t playerGuid,
+                               const std::string& msg, const std::string& reply)
+{
+    if (!g_EnableChatHistory || reply.empty())
+        return;
+    std::lock_guard<std::mutex> lock(g_ConversationHistoryMutex);
+    auto& dq = g_BotConversationHistory[botGuid][playerGuid];
+    dq.push_back({ msg, reply });
+    while (g_MaxConversationHistory > 0 && dq.size() > g_MaxConversationHistory)
+        dq.pop_front();
+}
+
 // ---------------------------------------------------------------------------
 // Worker-thread -> world-thread action queue.
 // ---------------------------------------------------------------------------
@@ -129,26 +165,32 @@ std::string BuildBotActionPrompt(Player* bot, Player* sender, const std::string&
     float py = sender ? sender->GetPositionY() : 0.0f;
     float pz = sender ? sender->GetPositionZ() : 0.0f;
 
-    std::string recent = RecentActionsText(bot ? bot->GetGUID().GetRawValue() : 0);
+    uint64_t botGuid = bot ? bot->GetGUID().GetRawValue() : 0;
+    uint64_t senderGuid = sender ? sender->GetGUID().GetRawValue() : 0;
+    std::string recent = RecentActionsText(botGuid);
+    std::string convo = ConversationContext(botGuid, senderGuid, senderName);
 
     std::ostringstream p;
-    p << "You are " << botName << ", a World of Warcraft character. "
-      << senderName << ", your companion, said to you: \"" << message << "\".\n";
+    p << "You are " << botName << ", a character in World of Warcraft. Act like a real player: "
+      << "chat naturally, have a personality, and remember what people tell you.\n";
+    if (!convo.empty())
+        p << "Your earlier conversation with " << senderName
+          << " (this is what THIS person has said to you before — remember it):\n" << convo << "\n";
     if (!recent.empty())
         p << "What you have been doing recently (use this to read short or vague requests "
           << "like \"this one now\" or \"get it\" in context):\n" << recent << "\n";
-    p << "Nearby units (use the exact guid number shown; do not invent one):\n"
+    p << senderName << " just said to you: \"" << message << "\".\n"
+      << "Nearby units (use the exact guid number shown; do not invent one):\n"
       << worldState
       << senderName << " is standing at x=" << px << " y=" << py << " z=" << pz << ".\n\n"
-      << "Choose ONE action in response and fill the matching field:\n"
-      << "- To fight a unit: action=\"attack\" and guid=<that unit's guid number>.\n"
-      << "- To follow " << senderName << ": action=\"follow\".\n"
-      << "- To move to a spot: action=\"moveto\" and x,y,z. To come to " << senderName
-      << ", use their x,y,z above.\n"
-      << "- To perform a gesture: action=\"emote\" and emote=one of dance, cheer, wave, laugh, bow, roar.\n"
-      << "- If nothing should be done: action=\"none\".\n"
-      << "Always include a short, in-character spoken reply in \"say\". Do what "
-      << senderName << " asks of you.";
+      << "MOST messages are just conversation, banter, or questions — for those set action=\"none\" "
+      << "and simply reply in \"say\" like a person would (answer questions, react, joke). "
+      << "ONLY choose a physical action when " << senderName << " clearly asks for that specific thing right now:\n"
+      << "- attack a unit: action=\"attack\", guid=<that unit's guid number>.\n"
+      << "- follow " << senderName << ": action=\"follow\".\n"
+      << "- move somewhere: action=\"moveto\" with x,y,z (to come to " << senderName << " use their x,y,z above).\n"
+      << "- a gesture: action=\"emote\", emote=one of dance, cheer, wave, laugh, bow, roar.\n"
+      << "When in doubt, use action=\"none\" and just talk. Always include a natural, in-character \"say\".";
     return p.str();
 }
 
@@ -331,6 +373,10 @@ namespace
 
         // Speak the reply first (the bot answers in natural speech AND acts).
         SpeakReply(botAI, sender, pa.sourceLocal, pa.say);
+
+        // Remember this exchange, per-character, so the bot recalls what THIS player
+        // told it (shared with the chat path's history store).
+        RecordConversation(pa.botGuid, pa.senderGuid, pa.message, pa.say);
 
         if (!ActionAllowed(cmd.type))
         {
