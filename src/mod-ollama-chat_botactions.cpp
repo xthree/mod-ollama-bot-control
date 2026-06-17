@@ -72,26 +72,6 @@ static std::string RecentActionsText(uint64_t botGuid)
 // Reusing the same store means an opted-in bot remembers what was said whether the
 // message went through the chat path or the action path (so it can recall e.g. a
 // name the player told it earlier).
-static std::string ConversationContext(uint64_t botGuid, uint64_t playerGuid, const std::string& playerName)
-{
-    if (!g_EnableChatHistory)
-        return "";
-    std::lock_guard<std::mutex> lock(g_ConversationHistoryMutex);
-    auto botIt = g_BotConversationHistory.find(botGuid);
-    if (botIt == g_BotConversationHistory.end())
-        return "";
-    auto pIt = botIt->second.find(playerGuid);
-    if (pIt == botIt->second.end() || pIt->second.empty())
-        return "";
-    std::string s;
-    for (const auto& e : pIt->second)
-    {
-        s += playerName + ": " + e.first + "\n";
-        s += "You: " + e.second + "\n";
-    }
-    return s;
-}
-
 static void RecordConversation(uint64_t botGuid, uint64_t playerGuid,
                                const std::string& msg, const std::string& reply)
 {
@@ -102,6 +82,33 @@ static void RecordConversation(uint64_t botGuid, uint64_t playerGuid,
     dq.push_back({ msg, reply });
     while (g_MaxConversationHistory > 0 && dq.size() > g_MaxConversationHistory)
         dq.pop_front();
+}
+
+// --- Shared, attributed group conversation (world thread only) ----------------
+// One transcript per bot covering EVERYONE who has spoken to it, each line tagged
+// with the speaker. This is how a real player experiences a group chat: they hear
+// everyone and remember who said what, so the bot can answer about a third person.
+static std::unordered_map<uint64_t, std::deque<std::string>> g_BotSharedConvo;
+
+static void RecordSharedConvo(uint64_t botGuid, const std::string& speaker, const std::string& text)
+{
+    if (text.empty())
+        return;
+    auto& dq = g_BotSharedConvo[botGuid];
+    dq.push_back(speaker + ": " + text);
+    while (dq.size() > 16)   // keep the last ~16 lines across all speakers
+        dq.pop_front();
+}
+
+static std::string SharedConvoText(uint64_t botGuid)
+{
+    auto it = g_BotSharedConvo.find(botGuid);
+    if (it == g_BotSharedConvo.end() || it->second.empty())
+        return "";
+    std::string s;
+    for (const std::string& line : it->second)
+        s += line + "\n";
+    return s;
 }
 
 // ---------------------------------------------------------------------------
@@ -168,14 +175,16 @@ std::string BuildBotActionPrompt(Player* bot, Player* sender, const std::string&
     uint64_t botGuid = bot ? bot->GetGUID().GetRawValue() : 0;
     uint64_t senderGuid = sender ? sender->GetGUID().GetRawValue() : 0;
     std::string recent = RecentActionsText(botGuid);
-    std::string convo = ConversationContext(botGuid, senderGuid, senderName);
+    std::string convo = SharedConvoText(botGuid);
+    (void)senderGuid;
 
     std::ostringstream p;
     p << "You are " << botName << ", a character in World of Warcraft. Act like a real player: "
       << "chat naturally, have a personality, and remember what people tell you.\n";
     if (!convo.empty())
-        p << "Your earlier conversation with " << senderName
-          << " (this is what THIS person has said to you before — remember it):\n" << convo << "\n";
+        p << "The conversation around you so far (each line is tagged with who said it — "
+          << "remember who said what, including OTHER people besides " << senderName
+          << ", and answer questions about them accurately):\n" << convo << "\n";
     if (!recent.empty())
         p << "What you have been doing recently (use this to read short or vague requests "
           << "like \"this one now\" or \"get it\" in context):\n" << recent << "\n";
@@ -378,6 +387,11 @@ namespace
         // Remember this exchange, per-character, so the bot recalls what THIS player
         // told it (shared with the chat path's history store).
         RecordConversation(pa.botGuid, pa.senderGuid, pa.message, pa.say);
+
+        // And into the shared, attributed group transcript so the bot is aware of
+        // everyone in the conversation (e.g. can answer about a third person).
+        RecordSharedConvo(pa.botGuid, sender ? sender->GetName() : "Someone", pa.message);
+        RecordSharedConvo(pa.botGuid, bot->GetName(), pa.say);
 
         if (!ActionAllowed(cmd.type))
         {
