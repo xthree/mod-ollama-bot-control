@@ -3,7 +3,18 @@
 </p>
 
 
-# AzerothCore + Playerbots Module: mod-ollama-chat
+# AzerothCore + Playerbots Module: mod-ollama-bot-control
+
+> [!NOTE]
+> **Fork lineage.** `mod-ollama-bot-control` is a fork of
+> [DustinHendrickson/mod-ollama-chat](https://github.com/DustinHendrickson/mod-ollama-chat)
+> (forked at HEAD `8ba5e79`), extending it from LLM *chat* into LLM-driven bot
+> **action control** (move / attack / follow / emote) plus per-bot situational
+> awareness. Licensed **AGPL-3.0** (unchanged from upstream); upstream attribution
+> and the merge path (`upstream` remote → `mod-ollama-chat`) are preserved.
+> Module **source lives in this repo**, not in the `xthree-homelab` docs repo.
+> Design + deployment plan: `docs/tasks/2026-06-16-wotlk-ollama-bot-control.md` in
+> `xthree-homelab`.
 
 
 > [!CAUTION]
