@@ -21,27 +21,26 @@ std::string BuildBotWorldStateContext(Player* bot)
     std::ostringstream oss;
     int listed = 0;
 
-    // Only hostile, attackable units — what "attack" needs. Listing all nearby NPCs
-    // pulls in critters (rabbits, etc.) that the small model then fixates on.
-    GuidVector units = botAI->GetAiObjectContext()->GetValue<GuidVector>("nearest hostile npcs")->Get();
+    // All nearby units (so the bot is aware of everything around it and can target
+    // anything, critters included). Tagged by hostility so it knows enemies from the rest.
+    GuidVector units = botAI->GetAiObjectContext()->GetValue<GuidVector>("nearest npcs")->Get();
     for (ObjectGuid const& guid : units)
     {
         Unit* unit = botAI->GetUnit(guid);
         if (!unit || unit->isDead() || !unit->IsInWorld())
             continue;
-        if (!bot->IsValidAttackTarget(unit))
-            continue;
 
+        const char* tag = unit->IsHostileTo(bot) ? "ENEMY" : "NPC";
         float dist = bot->GetDistance(unit);
-        oss << fmt::format("[ENEMY] {} (guid:{}) {:.0f}y\n", unit->GetName(),
+        oss << fmt::format("[{}] {} (guid:{}) {:.0f}y\n", tag, unit->GetName(),
                            guid.GetRawValue(), dist);
 
-        if (++listed >= 12)
+        if (++listed >= 15)
             break;
     }
 
     if (listed == 0)
-        oss << "(no enemies nearby)\n";
+        oss << "(no notable units nearby)\n";
 
     return oss.str();
 }

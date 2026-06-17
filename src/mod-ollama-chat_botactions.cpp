@@ -365,7 +365,10 @@ namespace
 
     bool ValidAttackTarget(Player* bot, Unit* u)
     {
-        return u && u->IsInWorld() && !u->isDead() && bot->IsValidAttackTarget(u);
+        // Permissive on purpose: any living unit in the world, so the bot can be told to
+        // attack anything (critters included). bot->Attack enforces whatever the core allows.
+        (void)bot;
+        return u && u->IsInWorld() && !u->isDead();
     }
 
     // Resolve who to attack. Replicates AttackAction::Attack for an arbitrary unit
