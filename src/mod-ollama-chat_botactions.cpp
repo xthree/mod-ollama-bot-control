@@ -292,7 +292,15 @@ namespace
         // instantaneous and need no lease. The lease auto-expires (renewed per
         // command), so the bot resumes its own life once you stop interacting.
         if (cmd.type == "attack" || cmd.type == "follow" || cmd.type == "moveto")
+        {
             botAI->SetExternalControl(g_ControlDurationSeconds);
+            // Strip the random bot's autonomous movement/questing strategies so they
+            // don't fight the commanded action (e.g. "move random"/"new rpg" vs follow,
+            // which makes the bot jitter). They are re-added by ResetStrategies once the
+            // lease lapses, restoring normal autonomy.
+            botAI->ChangeStrategy("-grind,-new rpg,-rpg,-move random,-travel,-lfg,-bg,-start duel",
+                                  BOT_STATE_NON_COMBAT);
+        }
 
         if (cmd.type == "attack")
         {
