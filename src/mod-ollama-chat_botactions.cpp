@@ -10,6 +10,10 @@
 #include "ObjectGuid.h"
 #include "ObjectAccessor.h"
 #include "MotionMaster.h"
+#include "WorldSession.h"
+#include "WorldPacket.h"
+#include "Opcodes.h"
+#include "SharedDefines.h"
 #include "Log.h"
 
 #include <nlohmann/json.hpp>
@@ -198,7 +202,9 @@ std::string BuildBotActionPrompt(Player* bot, Player* sender, const std::string&
       << "- attack a unit: action=\"attack\", guid=<that unit's guid number>.\n"
       << "- follow " << senderName << ": action=\"follow\".\n"
       << "- move somewhere: action=\"moveto\" with x,y,z (to come to " << senderName << " use their x,y,z above).\n"
-      << "- a gesture: action=\"emote\", emote=one of dance, cheer, wave, laugh, bow, roar.\n"
+      << "- a gesture or pose: action=\"emote\", emote=any standard WoW emote name, e.g. sit, "
+      << "sleep, stand, dance, bow, wave, rude, train, wink, kneel, cheer, laugh, salute, flex, "
+      << "point, cry, shrug, thank, hug, roar, clap, chicken, victory.\n"
       << "When in doubt, use action=\"none\" and just talk. Always include a natural, in-character \"say\" "
       << "of ONE or TWO short sentences — speak like a real person in chat, do not ramble.";
     return p.str();
@@ -365,6 +371,95 @@ namespace
         RecordBotAction(bot->GetGUID().GetRawValue(), "attacked " + target->GetName());
     }
 
+    // Perform any standard WoW emote by name: persistent poses (sit/sleep/stand)
+    // via stand-state, everything else as a real /emote (animation + social text).
+    void ExecuteEmote(Player* bot, PlayerbotAI* botAI, const std::string& rawName, const std::string& message)
+    {
+        std::string name = rawName.empty() ? EmoteFromMessage(message) : rawName;
+        std::transform(name.begin(), name.end(), name.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        while (!name.empty() && (name.front() == '/' || name.front() == ' ')) name.erase(name.begin());
+        while (!name.empty() && name.back() == ' ') name.pop_back();
+        if (name.empty())
+            name = "wave";
+
+        // Persistent stand-state poses.
+        if (name == "sit" || name == "sitdown")                                  { bot->SetStandState(UNIT_STAND_STATE_SIT);   return; }
+        if (name == "sleep" || name == "lay" || name == "laydown" || name == "liedown") { bot->SetStandState(UNIT_STAND_STATE_SLEEP); return; }
+        if (name == "stand" || name == "standup" || name == "getup")             { bot->SetStandState(UNIT_STAND_STATE_STAND); return; }
+
+        static const std::unordered_map<std::string, uint32_t> kTextEmotes = {
+            {"agree",TEXT_EMOTE_AGREE},{"amaze",TEXT_EMOTE_AMAZE},{"angry",TEXT_EMOTE_ANGRY},
+            {"apologize",TEXT_EMOTE_APOLOGIZE},{"sorry",TEXT_EMOTE_APOLOGIZE},{"applaud",TEXT_EMOTE_APPLAUD},
+            {"bashful",TEXT_EMOTE_BASHFUL},{"beckon",TEXT_EMOTE_BECKON},{"beg",TEXT_EMOTE_BEG},
+            {"bite",TEXT_EMOTE_BITE},{"blink",TEXT_EMOTE_BLINK},{"blush",TEXT_EMOTE_BLUSH},
+            {"bonk",TEXT_EMOTE_BONK},{"bored",TEXT_EMOTE_BORED},{"bounce",TEXT_EMOTE_BOUNCE},
+            {"bow",TEXT_EMOTE_BOW},{"brb",TEXT_EMOTE_BRB},{"burp",TEXT_EMOTE_BURP},{"bye",TEXT_EMOTE_BYE},
+            {"cackle",TEXT_EMOTE_CACKLE},{"cheer",TEXT_EMOTE_CHEER},{"chicken",TEXT_EMOTE_CHICKEN},
+            {"chuckle",TEXT_EMOTE_CHUCKLE},{"clap",TEXT_EMOTE_CLAP},{"confused",TEXT_EMOTE_CONFUSED},
+            {"congratulate",TEXT_EMOTE_CONGRATULATE},{"grats",TEXT_EMOTE_CONGRATULATE},{"cough",TEXT_EMOTE_COUGH},
+            {"cower",TEXT_EMOTE_COWER},{"cringe",TEXT_EMOTE_CRINGE},{"cry",TEXT_EMOTE_CRY},
+            {"curious",TEXT_EMOTE_CURIOUS},{"curtsey",TEXT_EMOTE_CURTSEY},{"dance",TEXT_EMOTE_DANCE},
+            {"drink",TEXT_EMOTE_DRINK},{"drool",TEXT_EMOTE_DROOL},{"eat",TEXT_EMOTE_EAT},
+            {"flex",TEXT_EMOTE_FLEX},{"flirt",TEXT_EMOTE_FLIRT},{"frown",TEXT_EMOTE_FROWN},
+            {"gasp",TEXT_EMOTE_GASP},{"giggle",TEXT_EMOTE_GIGGLE},{"glare",TEXT_EMOTE_GLARE},
+            {"gloat",TEXT_EMOTE_GLOAT},{"greet",TEXT_EMOTE_GREET},{"grin",TEXT_EMOTE_GRIN},
+            {"groan",TEXT_EMOTE_GROAN},{"grovel",TEXT_EMOTE_GROVEL},{"growl",TEXT_EMOTE_GROWL},
+            {"guffaw",TEXT_EMOTE_GUFFAW},{"hail",TEXT_EMOTE_HAIL},{"happy",TEXT_EMOTE_HAPPY},
+            {"hello",TEXT_EMOTE_HELLO},{"hi",TEXT_EMOTE_HELLO},{"hug",TEXT_EMOTE_HUG},
+            {"hungry",TEXT_EMOTE_HUNGRY},{"insult",TEXT_EMOTE_INSULT},{"kiss",TEXT_EMOTE_KISS},
+            {"kneel",TEXT_EMOTE_KNEEL},{"laugh",TEXT_EMOTE_LAUGH},{"lick",TEXT_EMOTE_LICK},
+            {"listen",TEXT_EMOTE_LISTEN},{"look",TEXT_EMOTE_LOOK},{"lost",TEXT_EMOTE_LOST},
+            {"love",TEXT_EMOTE_LOVE},{"moan",TEXT_EMOTE_MOAN},{"mock",TEXT_EMOTE_MOCK},
+            {"moo",TEXT_EMOTE_MOO},{"moon",TEXT_EMOTE_MOON},{"mourn",TEXT_EMOTE_MOURN},
+            {"no",TEXT_EMOTE_NO},{"nod",TEXT_EMOTE_NOD},{"yes",TEXT_EMOTE_NOD},{"panic",TEXT_EMOTE_PANIC},
+            {"peer",TEXT_EMOTE_PEER},{"pet",TEXT_EMOTE_PET},{"pinch",TEXT_EMOTE_PINCH},
+            {"plead",TEXT_EMOTE_PLEAD},{"point",TEXT_EMOTE_POINT},{"poke",TEXT_EMOTE_POKE},
+            {"ponder",TEXT_EMOTE_PONDER},{"pounce",TEXT_EMOTE_POUNCE},{"pout",TEXT_EMOTE_POUT},
+            {"praise",TEXT_EMOTE_PRAISE},{"pray",TEXT_EMOTE_PRAY},{"promise",TEXT_EMOTE_PROMISE},
+            {"proud",TEXT_EMOTE_PROUD},{"punch",TEXT_EMOTE_PUNCH},{"purr",TEXT_EMOTE_PURR},
+            {"puzzle",TEXT_EMOTE_PUZZLE},{"raise",TEXT_EMOTE_RAISE},{"ready",TEXT_EMOTE_READY},
+            {"roar",TEXT_EMOTE_ROAR},{"rofl",TEXT_EMOTE_ROFL},{"lol",TEXT_EMOTE_ROFL},
+            {"rolleyes",TEXT_EMOTE_ROLLEYES},{"rude",TEXT_EMOTE_RUDE},{"ruffle",TEXT_EMOTE_RUFFLE},
+            {"sad",TEXT_EMOTE_SAD},{"salute",TEXT_EMOTE_SALUTE},{"scared",TEXT_EMOTE_SCARED},
+            {"scoff",TEXT_EMOTE_SCOFF},{"scold",TEXT_EMOTE_SCOLD},{"scowl",TEXT_EMOTE_SCOWL},
+            {"scratch",TEXT_EMOTE_SCRATCH},{"search",TEXT_EMOTE_SEARCH},{"serious",TEXT_EMOTE_SERIOUS},
+            {"sexy",TEXT_EMOTE_SEXY},{"shake",TEXT_EMOTE_SHAKE},{"shimmy",TEXT_EMOTE_SHIMMY},
+            {"shiver",TEXT_EMOTE_SHIVER},{"shoo",TEXT_EMOTE_SHOO},{"shout",TEXT_EMOTE_SHOUT},
+            {"shrug",TEXT_EMOTE_SHRUG},{"shudder",TEXT_EMOTE_SHUDDER},{"shy",TEXT_EMOTE_SHY},
+            {"sigh",TEXT_EMOTE_SIGH},{"sing",TEXT_EMOTE_SING},{"slap",TEXT_EMOTE_SLAP},
+            {"smack",TEXT_EMOTE_SMACK},{"smile",TEXT_EMOTE_SMILE},{"smirk",TEXT_EMOTE_SMIRK},
+            {"snap",TEXT_EMOTE_SNAP},{"snarl",TEXT_EMOTE_SNARL},{"sneak",TEXT_EMOTE_SNEAK},
+            {"sneeze",TEXT_EMOTE_SNEEZE},{"snicker",TEXT_EMOTE_SNICKER},{"sniff",TEXT_EMOTE_SNIFF},
+            {"snort",TEXT_EMOTE_SNORT},{"snub",TEXT_EMOTE_SNUB},{"soothe",TEXT_EMOTE_SOOTHE},
+            {"spit",TEXT_EMOTE_SPIT},{"squeal",TEXT_EMOTE_SQUEAL},{"stare",TEXT_EMOTE_STARE},
+            {"stink",TEXT_EMOTE_STINK},{"surprised",TEXT_EMOTE_SURPRISED},{"surrender",TEXT_EMOTE_SURRENDER},
+            {"suspicious",TEXT_EMOTE_SUSPICIOUS},{"sweat",TEXT_EMOTE_SWEAT},{"talk",TEXT_EMOTE_TALK},
+            {"tap",TEXT_EMOTE_TAP},{"taunt",TEXT_EMOTE_TAUNT},{"tease",TEXT_EMOTE_TEASE},
+            {"thank",TEXT_EMOTE_THANK},{"thanks",TEXT_EMOTE_THANK},{"think",TEXT_EMOTE_THINK},
+            {"thirsty",TEXT_EMOTE_THIRSTY},{"threaten",TEXT_EMOTE_THREATEN},{"tickle",TEXT_EMOTE_TICKLE},
+            {"tired",TEXT_EMOTE_TIRED},{"toast",TEXT_EMOTE_TOAST},{"train",TEXT_EMOTE_TRAIN},
+            {"twiddle",TEXT_EMOTE_TWIDDLE},{"victory",TEXT_EMOTE_VICTORY},{"violin",TEXT_EMOTE_VIOLIN},
+            {"wave",TEXT_EMOTE_WAVE},{"welcome",TEXT_EMOTE_WELCOME},{"whine",TEXT_EMOTE_WHINE},
+            {"whistle",TEXT_EMOTE_WHISTLE},{"wink",TEXT_EMOTE_WINK},{"work",TEXT_EMOTE_WORK},
+            {"yawn",TEXT_EMOTE_YAWN},
+        };
+
+        auto it = kTextEmotes.find(name);
+        if (it != kTextEmotes.end())
+        {
+            WorldPacket data(CMSG_TEXT_EMOTE, 4 + 4 + 8);
+            data << uint32_t(it->second);
+            data << uint32_t(0);
+            data << ObjectGuid::Empty;
+            bot->GetSession()->HandleTextEmoteOpcode(data);
+            return;
+        }
+
+        // Unknown name: fall back to the engine's animation map.
+        botAI->DoSpecificAction("emote", Event(), false, name);
+    }
+
     void ExecuteBotAction(const PendingBotAction& pa)
     {
         Player* bot = ObjectAccessor::FindPlayer(ObjectGuid(pa.botGuid));
@@ -445,13 +540,27 @@ namespace
         }
         else if (cmd.type == "emote")
         {
-            std::string name = cmd.param;
-            if (name.empty())
-                name = EmoteFromMessage(pa.message);   // model omitted the emote field
-            if (name.empty())
-                name = "wave";
-            botAI->DoSpecificAction("emote", Event(), false, name);
-            RecordBotAction(bot->GetGUID().GetRawValue(), "performed the " + name + " emote");
+            std::string name = cmd.param.empty() ? EmoteFromMessage(pa.message) : cmd.param;
+            std::string elow = name;
+            std::transform(elow.begin(), elow.end(), elow.begin(),
+                           [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+            // Persistent poses must hold: take a lease, stop autonomous movement and
+            // stand the bot still, or its AI immediately stands back up.
+            bool stayPose = (elow == "sit" || elow == "sitdown" || elow == "sleep" ||
+                             elow == "lay" || elow == "laydown" || elow == "liedown");
+            if (stayPose)
+            {
+                botAI->SetExternalControl(g_ControlDurationSeconds);
+                botAI->ChangeStrategy("-follow,-grind,-new rpg,-rpg,-move random,-travel,-lfg,-bg,-start duel,+stay",
+                                      BOT_STATE_NON_COMBAT);
+                bot->GetMotionMaster()->Clear();
+                bot->StopMoving();
+            }
+
+            ExecuteEmote(bot, botAI, name, pa.message);
+            RecordBotAction(bot->GetGUID().GetRawValue(),
+                            "performed the " + (name.empty() ? std::string("wave") : name) + " emote");
         }
 
         if (g_DebugEnabled)
