@@ -20,6 +20,10 @@ struct BotActionCommand
 bool IsBotActionOptIn(Player* bot);
 void SetBotActionOptIn(Player* bot, bool optedIn);
 
+// True if this player is actively commanding an engaged opted-in bot (used to let
+// command words like "follow"/"stay" bypass the chat command-word blacklist).
+bool SenderHasEngagedBot(Player* sender);
+
 // Build the LLM action prompt (world thread; reads nearby world state).
 std::string BuildBotActionPrompt(Player* bot, Player* sender, const std::string& message);
 

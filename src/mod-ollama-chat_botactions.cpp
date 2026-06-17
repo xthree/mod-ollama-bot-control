@@ -49,6 +49,24 @@ void SetBotActionOptIn(Player* bot, bool optedIn)
     g_BotActionOptIn[bot->GetGUID().GetRawValue()] = optedIn;
 }
 
+bool SenderHasEngagedBot(Player* sender)
+{
+    if (!sender)
+        return false;
+    for (auto const& kv : g_BotActionOptIn)   // only opted-in bots — small set
+    {
+        if (!kv.second)
+            continue;
+        Player* bot = ObjectAccessor::FindPlayer(ObjectGuid(kv.first));
+        if (!bot)
+            continue;
+        PlayerbotAI* ai = PlayerbotsMgr::instance().GetPlayerbotAI(bot);
+        if (ai && ai->IsExternallyControlled() && ai->GetMaster() == sender)
+            return true;
+    }
+    return false;
+}
+
 // --- Per-bot short-term action memory (world thread only) ---------------------
 // A few recent actions so an ambiguous command ("ok this one now") is read in the
 // context of what the bot has been doing ("we've been attacking wolves").
@@ -218,8 +236,9 @@ std::string BuildBotActionPrompt(Player* bot, Player* sender, const std::string&
     (void)senderGuid;
 
     std::ostringstream p;
-    p << "You are " << botName << ", a character in World of Warcraft. Act like a real player: "
-      << "chat naturally, have a personality, and remember what people tell you.\n";
+    p << "You are " << botName << ", a friendly companion adventuring alongside the players. "
+      << "Act like a real player — chat naturally, with personality, and remember what people tell "
+      << "you — but you are loyal and you DO what your companions ask of you.\n";
     if (!convo.empty())
         p << "The conversation around you so far (each line is tagged with who said it — "
           << "remember who said what, including OTHER people besides " << senderName
@@ -231,10 +250,11 @@ std::string BuildBotActionPrompt(Player* bot, Player* sender, const std::string&
       << "Nearby units (use the exact guid number shown; do not invent one):\n"
       << worldState
       << senderName << " is standing at x=" << px << " y=" << py << " z=" << pz << ".\n\n"
-      << "Decide what to do. If " << senderName << " gives you an order or clearly asks you to DO "
-      << "something physical (attack/kill something, follow, come, stay, sit, an emote, etc.), then DO "
-      << "IT — pick that action, don't just talk about it. If it is only conversation, banter, or a "
-      << "question, use action=\"none\" and reply.\n"
+      << "Decide what to do. When " << senderName << " gives you a command or asks you to DO "
+      << "something (attack/kill, follow, come, stay, sit, move, an emote), you ALWAYS carry it out — "
+      << "set that exact action. NEVER refuse, argue, or just talk about it; you may be playful in your "
+      << "\"say\", but you still do it. If it is only conversation, banter, or a question, use "
+      << "action=\"none\" and reply.\n"
       << "- attack a unit: action=\"attack\", guid=<that unit's guid number>.\n"
       << "- follow " << senderName << " around: action=\"follow\".\n"
       << "- come over to " << senderName << " (walk up and stop near them, NOT follow): action=\"come\".\n"

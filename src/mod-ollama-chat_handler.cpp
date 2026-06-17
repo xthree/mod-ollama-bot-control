@@ -844,10 +844,16 @@ void PlayerBotChatHandler::ProcessChat(Player* player, uint32_t /*type*/, uint32
     };
 
     std::string trimmedMsg = rtrim(msg);
+    // If this player is actively commanding their engaged bot, don't let the
+    // command-word blacklist (follow/stay/sit/attack/...) swallow the message —
+    // those words ARE the commands we want the action pipeline to handle.
+    bool senderCommandingBot = SenderHasEngagedBot(player);
     for (const std::string& blacklist : g_BlacklistCommands)
     {
         if (startsWithWord(trimmedMsg, blacklist))
         {
+            if (senderCommandingBot)
+                break;
             if (g_DebugEnabled)
                 LOG_INFO("server.loading",
                          "[Ollama Chat] Message starts with '{}' (blacklisted). Skipping bot responses.",
