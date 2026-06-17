@@ -1447,7 +1447,7 @@ void PlayerBotChatHandler::ProcessChat(Player* player, uint32_t /*type*/, uint32
             std::string aMsg = msg;
             std::thread([aBotGuid, aSenderGuid, aSource, actionPrompt, actionSchema, aMsg]() {
                 try {
-                    std::string response = QueryOllamaRawAPI(actionPrompt, actionSchema);
+                    std::string response = QueryOllamaRawAPI(actionPrompt, actionSchema, 250);
                     if (g_DebugEnabled)
                         LOG_INFO("server.loading", "[OllamaBotControl] action LLM resp (len {}): {}",
                                  response.size(), response.substr(0, std::min<size_t>(response.size(), 400)));

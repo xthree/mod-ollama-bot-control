@@ -190,7 +190,8 @@ std::string BuildBotActionPrompt(Player* bot, Player* sender, const std::string&
       << "- follow " << senderName << ": action=\"follow\".\n"
       << "- move somewhere: action=\"moveto\" with x,y,z (to come to " << senderName << " use their x,y,z above).\n"
       << "- a gesture: action=\"emote\", emote=one of dance, cheer, wave, laugh, bow, roar.\n"
-      << "When in doubt, use action=\"none\" and just talk. Always include a natural, in-character \"say\".";
+      << "When in doubt, use action=\"none\" and just talk. Always include a natural, in-character \"say\" "
+      << "of ONE or TWO short sentences — speak like a real person in chat, do not ramble.";
     return p.str();
 }
 
@@ -200,7 +201,7 @@ std::string BotActionSchema()
     return R"JSON({
       "type":"object",
       "properties":{
-        "say":{"type":"string"},
+        "say":{"type":"string","maxLength":200},
         "action":{"type":"string","enum":["attack","follow","moveto","emote","none"]},
         "guid":{"type":"integer"},
         "x":{"type":"number"},

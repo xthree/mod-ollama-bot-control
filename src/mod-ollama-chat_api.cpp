@@ -25,7 +25,7 @@ std::string ExtractTextBetweenDoubleQuotes(const std::string& response)
 // output is returned verbatim (used by the action pipeline, which needs the raw
 // JSON); when false the legacy chat extraction (text between the first two
 // double-quotes) is applied.
-static std::string QueryOllamaImpl(const std::string& prompt, bool rawOutput, const std::string& formatSchema)
+static std::string QueryOllamaImpl(const std::string& prompt, bool rawOutput, const std::string& formatSchema, int numPredictOverride)
 {
     // Initialize our custom HTTP client
     static OllamaHttpClient httpClient;
@@ -56,9 +56,12 @@ static std::string QueryOllamaImpl(const std::string& prompt, bool rawOutput, co
     nlohmann::json options;
     bool hasOptions = false;
 
-    // Only include if set (do not send defaults if user did not set them)
-    if (g_OllamaNumPredict > 0) {
-        options["num_predict"] = g_OllamaNumPredict;
+    // Only include if set (do not send defaults if user did not set them).
+    // numPredictOverride (>=0) lets the action path raise the cap so its structured
+    // JSON always completes (a too-small cap truncates the JSON -> unparseable).
+    int effectiveNumPredict = (numPredictOverride >= 0) ? numPredictOverride : g_OllamaNumPredict;
+    if (effectiveNumPredict > 0) {
+        options["num_predict"] = effectiveNumPredict;
         hasOptions = true;
     }
     if (g_OllamaTemperature != 0.8f) {
@@ -241,14 +244,14 @@ static std::string QueryOllamaImpl(const std::string& prompt, bool rawOutput, co
 // Chat path: extract the spoken reply from the model output (legacy behaviour).
 std::string QueryOllamaAPI(const std::string& prompt)
 {
-    return QueryOllamaImpl(prompt, false, "");
+    return QueryOllamaImpl(prompt, false, "", -1);
 }
 
 // Action path: return the model's raw output, optionally constrained to a JSON
 // Schema (Ollama structured output) so the result is guaranteed to conform.
-std::string QueryOllamaRawAPI(const std::string& prompt, const std::string& formatSchema)
+std::string QueryOllamaRawAPI(const std::string& prompt, const std::string& formatSchema, int numPredict)
 {
-    return QueryOllamaImpl(prompt, true, formatSchema);
+    return QueryOllamaImpl(prompt, true, formatSchema, numPredict);
 }
 
 // Helper function to check if a response is valid (not empty and not an error)
