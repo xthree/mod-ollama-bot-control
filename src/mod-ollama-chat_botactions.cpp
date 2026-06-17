@@ -52,14 +52,20 @@ void SetBotActionOptIn(Player* bot, bool optedIn)
 // --- Per-bot custom personality (free text; world thread; in-memory) ----------
 static std::unordered_map<uint64_t, std::string> g_BotPersona;
 
+static void ResetBotMemory(uint64_t botGuid);   // defined after the memory maps
+
 void SetBotPersona(Player* bot, const std::string& text)
 {
     if (!bot)
         return;
+    uint64_t guid = bot->GetGUID().GetRawValue();
     if (text.empty())
-        g_BotPersona.erase(bot->GetGUID().GetRawValue());
+        g_BotPersona.erase(guid);
     else
-        g_BotPersona[bot->GetGUID().GetRawValue()] = text;
+        g_BotPersona[guid] = text;
+    // Wipe stale conversation so the new persona takes effect on the very next
+    // message instead of being out-voted by the old-style transcript.
+    ResetBotMemory(guid);
 }
 
 static std::string GetBotPersona(uint64_t botGuid)
@@ -138,7 +144,7 @@ static void RecordSharedConvo(uint64_t botGuid, const std::string& speaker, cons
         return;
     auto& dq = g_BotSharedConvo[botGuid];
     dq.push_back(speaker + ": " + text);
-    while (dq.size() > 16)   // keep the last ~16 lines across all speakers
+    while (dq.size() > 10)   // keep the last ~10 lines across all speakers
         dq.pop_front();
 }
 
@@ -151,6 +157,14 @@ static std::string SharedConvoText(uint64_t botGuid)
     for (const std::string& line : it->second)
         s += line + "\n";
     return s;
+}
+
+// Clear a bot's short-term memory (shared transcript + recent actions). Used when
+// a new persona is set so it isn't anchored to the old conversation style.
+static void ResetBotMemory(uint64_t botGuid)
+{
+    g_BotSharedConvo.erase(botGuid);
+    g_BotRecentActions.erase(botGuid);
 }
 
 // --- Persistent pose holding (sit/sleep) --------------------------------------
@@ -287,6 +301,8 @@ std::string BuildBotActionPrompt(Player* bot, Player* sender, const std::string&
       << "(any standard WoW emote, plus sit, sleep, stand, dismount: dance, bow, wave, rude, train, "
       << "wink, kneel, cheer, laugh, salute, flex, point, thank, hug, roar, clap, chicken, victory). "
       << "Do NOT emote just because you are chatting about something.\n"
+      << "Only act on what THIS latest message asks. Do NOT repeat an action you already did earlier "
+      << "(e.g. keep dancing, or walk over again) — if nothing new is being asked, use action=\"none\".\n"
       << "Always include a natural, in-character \"say\" of ONE or TWO short sentences — grounded and "
       << "on-topic, like a real person in chat. Do not ramble, repeat yourself, or invent absurd "
       << "scenarios; vary your wording and don't start every reply the same way.";
@@ -597,6 +613,9 @@ namespace
         // A movement/combat command means stop holding a sit/sleep pose.
         if (cmd.type == "attack" || cmd.type == "follow" || cmd.type == "moveto" || cmd.type == "come")
             ClearPose(pa.botGuid);
+        // A "go somewhere" command must not be yanked back by a prior stay/follow.
+        if (cmd.type == "moveto" || cmd.type == "come")
+            botAI->ChangeStrategy("-stay,-follow", BOT_STATE_NON_COMBAT);
 
         if (cmd.type == "attack")
         {
@@ -629,8 +648,9 @@ namespace
         else if (cmd.type == "come")
         {
             // Walk up to the player but stop a couple of yards short (not on top of them),
-            // and just hold there afterward (this is NOT a follow).
-            if (sender)
+            // and just hold there afterward (this is NOT a follow). If the bot is already
+            // close, don't bother re-walking over each time.
+            if (sender && bot->GetDistance(sender) > 8.0f)
             {
                 float px = sender->GetPositionX(), py = sender->GetPositionY(), pz = sender->GetPositionZ();
                 float dx = bot->GetPositionX() - px, dy = bot->GetPositionY() - py;
