@@ -91,20 +91,39 @@ std::string BuildBotActionPrompt(Player* bot, Player* sender, const std::string&
     float pz = sender ? sender->GetPositionZ() : 0.0f;
 
     std::ostringstream p;
-    p << "You are " << botName << ", a World of Warcraft character controlled as a bot. "
-      << "A player named " << senderName << " said to you: \"" << message << "\".\n"
-      << "Nearby units (use ONLY these exact guid numbers; never invent a guid):\n"
-      << worldState << "\n"
-      << "The player " << senderName << " is at position x=" << px << " y=" << py << " z=" << pz << ".\n"
-      << "Decide a single action to take in response. Reply with ONLY one JSON object, no other text:\n"
-      << "{\"say\":\"<short in-character reply>\",\"command\":{\"type\":\"<attack|follow|moveto|emote|none>\",\"params\":{}}}\n"
-      << "Params by command type:\n"
-      << "- attack: {\"guid\": <a guid number from the list above>}\n"
-      << "- follow: {} (you will follow " << senderName << ")\n"
-      << "- moveto: {\"x\":<num>,\"y\":<num>,\"z\":<num>} (to go to " << senderName << ", use their position above)\n"
-      << "- emote: {\"name\":\"<dance|cheer|wave|laugh|bow|roar>\"}\n"
-      << "- none: {} if no physical action is appropriate.\n";
+    p << "You are " << botName << ", a World of Warcraft character. "
+      << senderName << ", your companion, said to you: \"" << message << "\".\n"
+      << "Nearby units (use the exact guid number shown; do not invent one):\n"
+      << worldState
+      << senderName << " is standing at x=" << px << " y=" << py << " z=" << pz << ".\n\n"
+      << "Choose ONE action in response and fill the matching field:\n"
+      << "- To fight a unit: action=\"attack\" and guid=<that unit's guid number>.\n"
+      << "- To follow " << senderName << ": action=\"follow\".\n"
+      << "- To move to a spot: action=\"moveto\" and x,y,z. To come to " << senderName
+      << ", use their x,y,z above.\n"
+      << "- To perform a gesture: action=\"emote\" and emote=one of dance, cheer, wave, laugh, bow, roar.\n"
+      << "- If nothing should be done: action=\"none\".\n"
+      << "Always include a short, in-character spoken reply in \"say\". Do what "
+      << senderName << " asks of you.";
     return p.str();
+}
+
+std::string BotActionSchema()
+{
+    // Flat, easy-for-a-small-model schema. Ollama constrains output to this.
+    return R"JSON({
+      "type":"object",
+      "properties":{
+        "say":{"type":"string"},
+        "action":{"type":"string","enum":["attack","follow","moveto","emote","none"]},
+        "guid":{"type":"integer"},
+        "x":{"type":"number"},
+        "y":{"type":"number"},
+        "z":{"type":"number"},
+        "emote":{"type":"string"}
+      },
+      "required":["say","action"]
+    })JSON";
 }
 
 // ---------------------------------------------------------------------------
@@ -142,39 +161,34 @@ bool ParseBotActionResponse(const std::string& response, std::string& sayOut, Bo
     {
         nlohmann::json j = nlohmann::json::parse(jsonStr);
 
+        // Output is schema-constrained to a flat {say, action, guid?, x,y,z?, emote?}.
         if (j.contains("say") && j["say"].is_string())
             sayOut = j["say"].get<std::string>();
 
-        if (j.contains("command") && j["command"].is_object())
+        if (j.contains("action") && j["action"].is_string())
+            cmdOut.type = j["action"].get<std::string>();
+
+        std::transform(cmdOut.type.begin(), cmdOut.type.end(), cmdOut.type.begin(),
+                       [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+
+        if (j.contains("guid"))
         {
-            auto& c = j["command"];
-            if (c.contains("type") && c["type"].is_string())
-                cmdOut.type = c["type"].get<std::string>();
-
-            std::transform(cmdOut.type.begin(), cmdOut.type.end(), cmdOut.type.begin(),
-                           [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
-
-            if (c.contains("params") && c["params"].is_object())
-            {
-                auto& pr = c["params"];
-                if (pr.contains("guid"))
-                {
-                    if (pr["guid"].is_number_unsigned())     cmdOut.targetGuid = pr["guid"].get<uint64_t>();
-                    else if (pr["guid"].is_number_integer()) cmdOut.targetGuid = static_cast<uint64_t>(pr["guid"].get<int64_t>());
-                    else if (pr["guid"].is_string())         cmdOut.targetGuid = std::strtoull(pr["guid"].get<std::string>().c_str(), nullptr, 10);
-                }
-                if (pr.contains("x") && pr.contains("y") && pr.contains("z") &&
-                    pr["x"].is_number() && pr["y"].is_number() && pr["z"].is_number())
-                {
-                    cmdOut.hasPos = true;
-                    cmdOut.x = pr["x"].get<float>();
-                    cmdOut.y = pr["y"].get<float>();
-                    cmdOut.z = pr["z"].get<float>();
-                }
-                if (pr.contains("name") && pr["name"].is_string())
-                    cmdOut.param = pr["name"].get<std::string>();
-            }
+            auto& g = j["guid"];
+            if (g.is_number_unsigned())     cmdOut.targetGuid = g.get<uint64_t>();
+            else if (g.is_number_integer()) cmdOut.targetGuid = static_cast<uint64_t>(g.get<int64_t>());
+            else if (g.is_string())         cmdOut.targetGuid = std::strtoull(g.get<std::string>().c_str(), nullptr, 10);
         }
+        if (j.contains("x") && j.contains("y") && j.contains("z") &&
+            j["x"].is_number() && j["y"].is_number() && j["z"].is_number())
+        {
+            cmdOut.hasPos = true;
+            cmdOut.x = j["x"].get<float>();
+            cmdOut.y = j["y"].get<float>();
+            cmdOut.z = j["z"].get<float>();
+        }
+        if (j.contains("emote") && j["emote"].is_string())
+            cmdOut.param = j["emote"].get<std::string>();
+
         return true;
     }
     catch (const std::exception&)

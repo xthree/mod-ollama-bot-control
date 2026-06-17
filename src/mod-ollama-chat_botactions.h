@@ -23,9 +23,11 @@ void SetBotActionOptIn(Player* bot, bool optedIn);
 // Build the LLM action prompt (world thread; reads nearby world state).
 std::string BuildBotActionPrompt(Player* bot, Player* sender, const std::string& message);
 
-// Parse a model response into a spoken reply + a command. Tolerant of prose
-// around the JSON: extracts the first balanced {...} object. Returns true if a
-// JSON object was found and parsed.
+// The JSON Schema sent to Ollama as `format` to constrain the model's output to
+// a flat {say, action, guid?, x?,y?,z?, emote?} shape (structured output).
+std::string BotActionSchema();
+
+// Parse the (schema-constrained) model response into a spoken reply + command.
 bool ParseBotActionResponse(const std::string& response, std::string& sayOut, BotActionCommand& cmdOut);
 
 // Enqueue a resolved action for world-thread execution (safe to call from a

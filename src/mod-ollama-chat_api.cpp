@@ -25,7 +25,7 @@ std::string ExtractTextBetweenDoubleQuotes(const std::string& response)
 // output is returned verbatim (used by the action pipeline, which needs the raw
 // JSON); when false the legacy chat extraction (text between the first two
 // double-quotes) is applied.
-static std::string QueryOllamaImpl(const std::string& prompt, bool rawOutput)
+static std::string QueryOllamaImpl(const std::string& prompt, bool rawOutput, const std::string& formatSchema)
 {
     // Initialize our custom HTTP client
     static OllamaHttpClient httpClient;
@@ -135,6 +135,20 @@ static std::string QueryOllamaImpl(const std::string& prompt, bool rawOutput)
         requestData["hidethinking"] = true;
     }
 
+    // Structured output: constrain generation to a JSON Schema (Ollama format=schema)
+    // so the model can only emit conforming tokens. Used by the action pipeline.
+    if (!formatSchema.empty())
+    {
+        try
+        {
+            requestData["format"] = nlohmann::json::parse(formatSchema);
+        }
+        catch (const std::exception& e)
+        {
+            LOG_ERROR("server.loading", "[OllamaBotControl] invalid format schema: {}", e.what());
+        }
+    }
+
     std::string requestDataStr = requestData.dump();
 
     // Make HTTP POST request using our custom client
@@ -227,13 +241,14 @@ static std::string QueryOllamaImpl(const std::string& prompt, bool rawOutput)
 // Chat path: extract the spoken reply from the model output (legacy behaviour).
 std::string QueryOllamaAPI(const std::string& prompt)
 {
-    return QueryOllamaImpl(prompt, false);
+    return QueryOllamaImpl(prompt, false, "");
 }
 
-// Action path: return the model's raw output (full JSON) untouched.
-std::string QueryOllamaRawAPI(const std::string& prompt)
+// Action path: return the model's raw output, optionally constrained to a JSON
+// Schema (Ollama structured output) so the result is guaranteed to conform.
+std::string QueryOllamaRawAPI(const std::string& prompt, const std::string& formatSchema)
 {
-    return QueryOllamaImpl(prompt, true);
+    return QueryOllamaImpl(prompt, true, formatSchema);
 }
 
 // Helper function to check if a response is valid (not empty and not an error)

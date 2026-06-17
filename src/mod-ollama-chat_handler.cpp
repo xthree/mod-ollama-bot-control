@@ -1417,12 +1417,13 @@ void PlayerBotChatHandler::ProcessChat(Player* player, uint32_t /*type*/, uint32
             if (g_DebugEnabled)
                 LOG_INFO("server.loading", "[OllamaBotControl] Bot {} opted-in -> action pipeline", bot->GetName());
             std::string actionPrompt = BuildBotActionPrompt(bot, player, msg);
+            std::string actionSchema = BotActionSchema();
             uint64_t aBotGuid = bot->GetGUID().GetRawValue();
             uint64_t aSenderGuid = senderGuid;
             int aSource = static_cast<int>(sourceLocal);
-            std::thread([aBotGuid, aSenderGuid, aSource, actionPrompt]() {
+            std::thread([aBotGuid, aSenderGuid, aSource, actionPrompt, actionSchema]() {
                 try {
-                    std::string response = QueryOllamaRawAPI(actionPrompt);
+                    std::string response = QueryOllamaRawAPI(actionPrompt, actionSchema);
                     if (g_DebugEnabled)
                         LOG_INFO("server.loading", "[OllamaBotControl] action LLM resp (len {}): {}",
                                  response.size(), response.substr(0, std::min<size_t>(response.size(), 400)));

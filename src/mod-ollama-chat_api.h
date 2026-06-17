@@ -8,8 +8,9 @@
 std::string QueryOllamaAPI(const std::string& prompt);
 
 // Action path: returns the model's raw output (full JSON) without the chat
-// extract-between-quotes post-processing.
-std::string QueryOllamaRawAPI(const std::string& prompt);
+// extract-between-quotes post-processing. If formatSchema is non-empty it is
+// sent as Ollama's `format` (a JSON Schema) to constrain generation.
+std::string QueryOllamaRawAPI(const std::string& prompt, const std::string& formatSchema = "");
 
 // Checks if an API response is valid (not an error message)
 bool IsValidAPIResponse(const std::string& response);
