@@ -163,7 +163,7 @@ namespace
     {
         std::string m = message;
         std::transform(m.begin(), m.end(), m.begin(), [](unsigned char c){ return static_cast<char>(std::tolower(c)); });
-        static const char* kEmotes[] = { "sit", "sleep", "lay down", "lie down", "stand up", "stand",
+        static const char* kEmotes[] = { "dismount", "sit", "sleep", "lay down", "lie down", "stand up", "stand",
                                          "dance", "cheer", "wave", "laugh", "bow", "roar", "salute",
                                          "clap", "applaud", "cry", "flex", "kneel", "point", "rude",
                                          "train", "wink", "thank", "hug", "victory", "flirt", "chicken" };
@@ -241,8 +241,8 @@ std::string BuildBotActionPrompt(Player* bot, Player* sender, const std::string&
       << "- go to a specific spot: action=\"moveto\" with x,y,z.\n"
       << "- a gesture or pose, ONLY if they explicitly ask you to do that gesture by name "
       << "(e.g. \"sit\", \"dance\", \"bow\", \"wave\"): action=\"emote\" and emote=<that name> "
-      << "(any standard WoW emote: sit, sleep, stand, dance, bow, wave, rude, train, wink, kneel, "
-      << "cheer, laugh, salute, flex, point, thank, hug, roar, clap, chicken, victory). "
+      << "(any standard WoW emote, plus sit, sleep, stand, dismount: dance, bow, wave, rude, train, "
+      << "wink, kneel, cheer, laugh, salute, flex, point, thank, hug, roar, clap, chicken, victory). "
       << "Do NOT emote just because you are chatting about something.\n"
       << "When in doubt, use action=\"none\" and just talk. Always include a natural, in-character \"say\" "
       << "of ONE or TWO short sentences — speak like a real person in chat, do not ramble.";
@@ -422,6 +422,8 @@ namespace
         if (name.empty())
             return;   // no resolvable emote -> do nothing (don't randomly wave)
 
+        if (name == "dismount" || name == "unmount")                             { bot->Dismount(); return; }
+
         // Persistent stand-state poses.
         if (name == "sit" || name == "sitdown")                                  { bot->SetStandState(UNIT_STAND_STATE_SIT);   return; }
         if (name == "sleep" || name == "lay" || name == "laydown" || name == "liedown") { bot->SetStandState(UNIT_STAND_STATE_SLEEP); return; }
@@ -528,16 +530,17 @@ namespace
         RecordSharedConvo(pa.botGuid, bot->GetName(), pa.say);
 
         // Engagement: being addressed pauses the bot's autonomous questing so it stops
-        // and attends to you naturally — no explicit "stay" needed. A real command holds
-        // it for the full control duration; plain conversation gets a brief pause. The
-        // strip removes only the autonomous movers (grind/rpg/etc.), leaving an active
-        // follow/stay/pose intact.
-        bool isCommand = ActionAllowed(cmd.type);
-        botAI->SetExternalControl(isCommand ? g_ControlDurationSeconds : 60);
+        // and attends to you naturally — no explicit "stay" needed. We set the master to
+        // whoever is talking so the handler keeps routing their later unaddressed messages
+        // to this bot (no need to repeat its name), and renew the control lease. The strip
+        // removes only the autonomous movers, leaving an active follow/stay/pose intact.
+        if (sender)
+            botAI->SetMaster(sender);
+        botAI->SetExternalControl(g_ControlDurationSeconds);
         botAI->ChangeStrategy("-grind,-new rpg,-rpg,-move random,-travel,-lfg,-bg,-start duel",
                               BOT_STATE_NON_COMBAT);
 
-        if (!isCommand)
+        if (!ActionAllowed(cmd.type))
         {
             if (g_DebugEnabled)
                 LOG_INFO("server.loading", "[OllamaBotControl] bot {} engaged (conversation), no action", bot->GetName());
