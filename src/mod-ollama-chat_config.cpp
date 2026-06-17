@@ -370,63 +370,63 @@ std::string GetMultiLineConfigValue(const std::string& configFilePath, const std
 
 void LoadOllamaChatConfig()
 {
-    g_SayDistance                     = sConfigMgr->GetOption<float>("OllamaChat.SayDistance", 30.0f);
-    g_YellDistance                    = sConfigMgr->GetOption<float>("OllamaChat.YellDistance", 100.0f);
+    g_SayDistance                     = sConfigMgr->GetOption<float>("OllamaBotControl.SayDistance", 30.0f);
+    g_YellDistance                    = sConfigMgr->GetOption<float>("OllamaBotControl.YellDistance", 100.0f);
     
     // Load per-channel-type reply chances
-    g_PlayerReplyChance_Say           = sConfigMgr->GetOption<uint32_t>("OllamaChat.PlayerReplyChance.Say", 90);
-    g_BotReplyChance_Say              = sConfigMgr->GetOption<uint32_t>("OllamaChat.BotReplyChance.Say", 10);
-    g_PlayerReplyChance_Channel       = sConfigMgr->GetOption<uint32_t>("OllamaChat.PlayerReplyChance.Channel", 50);
-    g_BotReplyChance_Channel          = sConfigMgr->GetOption<uint32_t>("OllamaChat.BotReplyChance.Channel", 5);
-    g_PlayerReplyChance_Party         = sConfigMgr->GetOption<uint32_t>("OllamaChat.PlayerReplyChance.Party", 90);
-    g_BotReplyChance_Party            = sConfigMgr->GetOption<uint32_t>("OllamaChat.BotReplyChance.Party", 10);
-    g_PlayerReplyChance_Guild         = sConfigMgr->GetOption<uint32_t>("OllamaChat.PlayerReplyChance.Guild", 70);
-    g_BotReplyChance_Guild            = sConfigMgr->GetOption<uint32_t>("OllamaChat.BotReplyChance.Guild", 5);
+    g_PlayerReplyChance_Say           = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.PlayerReplyChance.Say", 90);
+    g_BotReplyChance_Say              = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.BotReplyChance.Say", 10);
+    g_PlayerReplyChance_Channel       = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.PlayerReplyChance.Channel", 50);
+    g_BotReplyChance_Channel          = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.BotReplyChance.Channel", 5);
+    g_PlayerReplyChance_Party         = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.PlayerReplyChance.Party", 90);
+    g_BotReplyChance_Party            = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.BotReplyChance.Party", 10);
+    g_PlayerReplyChance_Guild         = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.PlayerReplyChance.Guild", 70);
+    g_BotReplyChance_Guild            = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.BotReplyChance.Guild", 5);
     
-    g_MaxBotsToPick                   = sConfigMgr->GetOption<uint32_t>("OllamaChat.MaxBotsToPick", 2);
-    g_OllamaUrl                       = sConfigMgr->GetOption<std::string>("OllamaChat.Url", "http://localhost:11434/api/generate");
-    g_OllamaModel                     = sConfigMgr->GetOption<std::string>("OllamaChat.Model", "llama3.2:1b");
-    g_OllamaNumPredict                = sConfigMgr->GetOption<uint32_t>("OllamaChat.NumPredict", 40);
-    g_OllamaTemperature               = sConfigMgr->GetOption<float>("OllamaChat.Temperature", 0.8f);
-    g_OllamaTopP                      = sConfigMgr->GetOption<float>("OllamaChat.TopP", 0.95f);
-    g_OllamaRepeatPenalty             = sConfigMgr->GetOption<float>("OllamaChat.RepeatPenalty", 1.1f);
-    g_OllamaNumCtx                    = sConfigMgr->GetOption<uint32_t>("OllamaChat.NumCtx", 0);
-    g_OllamaNumThreads                = sConfigMgr->GetOption<uint32_t>("OllamaChat.NumThreads", 0);
-    g_OllamaStop                      = sConfigMgr->GetOption<std::string>("OllamaChat.Stop", "");
-    g_OllamaSystemPrompt              = sConfigMgr->GetOption<std::string>("OllamaChat.SystemPrompt", "");
-    g_OllamaSeed                      = sConfigMgr->GetOption<std::string>("OllamaChat.Seed", "");
+    g_MaxBotsToPick                   = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.MaxBotsToPick", 2);
+    g_OllamaUrl                       = sConfigMgr->GetOption<std::string>("OllamaBotControl.Url", "http://localhost:11434/api/generate");
+    g_OllamaModel                     = sConfigMgr->GetOption<std::string>("OllamaBotControl.Model", "llama3.2:1b");
+    g_OllamaNumPredict                = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.NumPredict", 40);
+    g_OllamaTemperature               = sConfigMgr->GetOption<float>("OllamaBotControl.Temperature", 0.8f);
+    g_OllamaTopP                      = sConfigMgr->GetOption<float>("OllamaBotControl.TopP", 0.95f);
+    g_OllamaRepeatPenalty             = sConfigMgr->GetOption<float>("OllamaBotControl.RepeatPenalty", 1.1f);
+    g_OllamaNumCtx                    = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.NumCtx", 0);
+    g_OllamaNumThreads                = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.NumThreads", 0);
+    g_OllamaStop                      = sConfigMgr->GetOption<std::string>("OllamaBotControl.Stop", "");
+    g_OllamaSystemPrompt              = sConfigMgr->GetOption<std::string>("OllamaBotControl.SystemPrompt", "");
+    g_OllamaSeed                      = sConfigMgr->GetOption<std::string>("OllamaBotControl.Seed", "");
 
-    g_MaxConcurrentQueries            = sConfigMgr->GetOption<uint32_t>("OllamaChat.MaxConcurrentQueries", 0);
+    g_MaxConcurrentQueries            = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.MaxConcurrentQueries", 0);
 
-    g_Enable                          = sConfigMgr->GetOption<bool>("OllamaChat.Enable", true);
-    g_DisableRepliesInCombat          = sConfigMgr->GetOption<bool>("OllamaChat.DisableRepliesInCombat", true);
-    g_EnableRandomChatter             = sConfigMgr->GetOption<bool>("OllamaChat.EnableRandomChatter", true);
-    g_EnableEventChatter              = sConfigMgr->GetOption<bool>("OllamaChat.EnableEventChatter", true);
-    g_EnableWhisperReplies            = sConfigMgr->GetOption<bool>("OllamaChat.EnableWhisperReplies", false);
+    g_Enable                          = sConfigMgr->GetOption<bool>("OllamaBotControl.Enable", true);
+    g_DisableRepliesInCombat          = sConfigMgr->GetOption<bool>("OllamaBotControl.DisableRepliesInCombat", true);
+    g_EnableRandomChatter             = sConfigMgr->GetOption<bool>("OllamaBotControl.EnableRandomChatter", true);
+    g_EnableEventChatter              = sConfigMgr->GetOption<bool>("OllamaBotControl.EnableEventChatter", true);
+    g_EnableWhisperReplies            = sConfigMgr->GetOption<bool>("OllamaBotControl.EnableWhisperReplies", false);
 
-    g_DebugEnabled                    = sConfigMgr->GetOption<bool>("OllamaChat.DebugEnabled", false);
-    g_DebugShowFullPrompt             = sConfigMgr->GetOption<bool>("OllamaChat.DebugShowFullPrompt", false);
+    g_DebugEnabled                    = sConfigMgr->GetOption<bool>("OllamaBotControl.DebugEnabled", false);
+    g_DebugShowFullPrompt             = sConfigMgr->GetOption<bool>("OllamaBotControl.DebugShowFullPrompt", false);
 
-    g_MinRandomInterval               = sConfigMgr->GetOption<uint32_t>("OllamaChat.MinRandomInterval", 45);
-    g_MaxRandomInterval               = sConfigMgr->GetOption<uint32_t>("OllamaChat.MaxRandomInterval", 180);
-    g_RandomChatterRealPlayerDistance = sConfigMgr->GetOption<float>("OllamaChat.RandomChatterRealPlayerDistance", 40.0f);
-    g_RandomChatterBotCommentChance   = sConfigMgr->GetOption<uint32_t>("OllamaChat.RandomChatterBotCommentChance", 25);
-    g_RandomChatterMaxBotsPerPlayer   = sConfigMgr->GetOption<uint32_t>("OllamaChat.RandomChatterMaxBotsPerPlayer", 2);
+    g_MinRandomInterval               = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.MinRandomInterval", 45);
+    g_MaxRandomInterval               = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.MaxRandomInterval", 180);
+    g_RandomChatterRealPlayerDistance = sConfigMgr->GetOption<float>("OllamaBotControl.RandomChatterRealPlayerDistance", 40.0f);
+    g_RandomChatterBotCommentChance   = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.RandomChatterBotCommentChance", 25);
+    g_RandomChatterMaxBotsPerPlayer   = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.RandomChatterMaxBotsPerPlayer", 2);
 
-    g_EnableGuildRandomAmbientChatter = sConfigMgr->GetOption<bool>("OllamaChat.EnableGuildRandomAmbientChatter", true);
-    g_GuildRandomChatterChance        = sConfigMgr->GetOption<uint32_t>("OllamaChat.GuildRandomChatterChance", 10);
+    g_EnableGuildRandomAmbientChatter = sConfigMgr->GetOption<bool>("OllamaBotControl.EnableGuildRandomAmbientChatter", true);
+    g_GuildRandomChatterChance        = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.GuildRandomChatterChance", 10);
 
-    g_EventChatterRealPlayerDistance = sConfigMgr->GetOption<float>("OllamaChat.EventChatterRealPlayerDistance", 40.0f);
-    g_EventChatterBotCommentChance   = sConfigMgr->GetOption<uint32_t>("OllamaChat.EventChatterBotCommentChance", 15);
-    g_EventChatterBotSelfCommentChance = sConfigMgr->GetOption<uint32_t>("OllamaChat.EventChatterBotSelfCommentChance", 5);
-    g_EventChatterMaxBotsPerPlayer   = sConfigMgr->GetOption<uint32_t>("OllamaChat.EventChatterMaxBotsPerPlayer", 2);
+    g_EventChatterRealPlayerDistance = sConfigMgr->GetOption<float>("OllamaBotControl.EventChatterRealPlayerDistance", 40.0f);
+    g_EventChatterBotCommentChance   = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.EventChatterBotCommentChance", 15);
+    g_EventChatterBotSelfCommentChance = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.EventChatterBotSelfCommentChance", 5);
+    g_EventChatterMaxBotsPerPlayer   = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.EventChatterMaxBotsPerPlayer", 2);
 
-    g_EnableRPPersonalities           = sConfigMgr->GetOption<bool>("OllamaChat.EnableRPPersonalities", false);
+    g_EnableRPPersonalities           = sConfigMgr->GetOption<bool>("OllamaBotControl.EnableRPPersonalities", false);
 
-    g_RandomChatterPromptTemplate     = sConfigMgr->GetOption<std::string>("OllamaChat.RandomChatterPromptTemplate", "");
+    g_RandomChatterPromptTemplate     = sConfigMgr->GetOption<std::string>("OllamaBotControl.RandomChatterPromptTemplate", "");
 
     // Load random chatter prompt variations
-    std::string variationsStr = sConfigMgr->GetOption<std::string>("OllamaChat.RandomChatterPromptVariations", "");
+    std::string variationsStr = sConfigMgr->GetOption<std::string>("OllamaBotControl.RandomChatterPromptVariations", "");
     g_RandomChatterPromptVariations.clear();
     if (!variationsStr.empty())
     {
@@ -442,7 +442,7 @@ void LoadOllamaChatConfig()
     }
 
     // Load random chatter question variations
-    std::string questionsStr = sConfigMgr->GetOption<std::string>("OllamaChat.RandomChatterQuestionVariations", "");
+    std::string questionsStr = sConfigMgr->GetOption<std::string>("OllamaBotControl.RandomChatterQuestionVariations", "");
     g_RandomChatterQuestionVariations.clear();
     if (!questionsStr.empty())
     {
@@ -457,65 +457,65 @@ void LoadOllamaChatConfig()
         }
     }
 
-    g_EventChatterPromptTemplate     = sConfigMgr->GetOption<std::string>("OllamaChat.EventChatterPromptTemplate", "");
+    g_EventChatterPromptTemplate     = sConfigMgr->GetOption<std::string>("OllamaBotControl.EventChatterPromptTemplate", "");
 
-    g_ChatPromptTemplate              = sConfigMgr->GetOption<std::string>("OllamaChat.ChatPromptTemplate", "");
+    g_ChatPromptTemplate              = sConfigMgr->GetOption<std::string>("OllamaBotControl.ChatPromptTemplate", "");
     
-    g_ChatExtraInfoTemplate           = sConfigMgr->GetOption<std::string>("OllamaChat.ChatExtraInfoTemplate", "");
+    g_ChatExtraInfoTemplate           = sConfigMgr->GetOption<std::string>("OllamaBotControl.ChatExtraInfoTemplate", "");
 
-    g_DefaultPersonalityPrompt        = sConfigMgr->GetOption<std::string>("OllamaChat.DefaultPersonalityPrompt", "");
+    g_DefaultPersonalityPrompt        = sConfigMgr->GetOption<std::string>("OllamaBotControl.DefaultPersonalityPrompt", "");
 
-    g_MaxConversationHistory          = sConfigMgr->GetOption<uint32_t>("OllamaChat.MaxConversationHistory", 5);
-    g_ConversationHistorySaveInterval = sConfigMgr->GetOption<uint32_t>("OllamaChat.ConversationHistorySaveInterval", 10);
+    g_MaxConversationHistory          = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.MaxConversationHistory", 5);
+    g_ConversationHistorySaveInterval = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.ConversationHistorySaveInterval", 10);
 
-    g_ChatHistoryHeaderTemplate       = sConfigMgr->GetOption<std::string>("OllamaChat.ChatHistoryHeaderTemplate", "");
-    g_ChatHistoryLineTemplate         = sConfigMgr->GetOption<std::string>("OllamaChat.ChatHistoryLineTemplate", "");
-    g_ChatHistoryFooterTemplate       = sConfigMgr->GetOption<std::string>("OllamaChat.ChatHistoryFooterTemplate", "");
+    g_ChatHistoryHeaderTemplate       = sConfigMgr->GetOption<std::string>("OllamaBotControl.ChatHistoryHeaderTemplate", "");
+    g_ChatHistoryLineTemplate         = sConfigMgr->GetOption<std::string>("OllamaBotControl.ChatHistoryLineTemplate", "");
+    g_ChatHistoryFooterTemplate       = sConfigMgr->GetOption<std::string>("OllamaBotControl.ChatHistoryFooterTemplate", "");
 
-    g_EnableChatBotSnapshotTemplate   = sConfigMgr->GetOption<bool>("OllamaChat.EnableChatBotSnapshotTemplate", false);
-    g_ChatBotSnapshotTemplate         = sConfigMgr->GetOption<std::string>("OllamaChat.ChatBotSnapshotTemplate", "");
+    g_EnableChatBotSnapshotTemplate   = sConfigMgr->GetOption<bool>("OllamaBotControl.EnableChatBotSnapshotTemplate", false);
+    g_ChatBotSnapshotTemplate         = sConfigMgr->GetOption<std::string>("OllamaBotControl.ChatBotSnapshotTemplate", "");
 
-    g_EnableChatHistory               = sConfigMgr->GetOption<bool>("OllamaChat.EnableChatHistory", true);
+    g_EnableChatHistory               = sConfigMgr->GetOption<bool>("OllamaBotControl.EnableChatHistory", true);
 
     // Bot-Player Sentiment Tracking
-    g_EnableSentimentTracking         = sConfigMgr->GetOption<bool>("OllamaChat.EnableSentimentTracking", true);
-    g_SentimentDefaultValue           = sConfigMgr->GetOption<float>("OllamaChat.SentimentDefaultValue", 0.5f);
-    g_SentimentAdjustmentStrength     = sConfigMgr->GetOption<float>("OllamaChat.SentimentAdjustmentStrength", 0.1f);
-    g_SentimentSaveInterval           = sConfigMgr->GetOption<uint32_t>("OllamaChat.SentimentSaveInterval", 10);
-    g_SentimentAnalysisPrompt         = sConfigMgr->GetOption<std::string>("OllamaChat.SentimentAnalysisPrompt", "Analyze the sentiment of this message: \"{message}\". Respond only with: POSITIVE, NEGATIVE, or NEUTRAL.");
-    g_SentimentPromptTemplate         = sConfigMgr->GetOption<std::string>("OllamaChat.SentimentPromptTemplate", "Your relationship sentiment with {player_name} is {sentiment_value} (0.0=hostile, 0.5=neutral, 1.0=friendly). Use this to guide your tone and response.");
+    g_EnableSentimentTracking         = sConfigMgr->GetOption<bool>("OllamaBotControl.EnableSentimentTracking", true);
+    g_SentimentDefaultValue           = sConfigMgr->GetOption<float>("OllamaBotControl.SentimentDefaultValue", 0.5f);
+    g_SentimentAdjustmentStrength     = sConfigMgr->GetOption<float>("OllamaBotControl.SentimentAdjustmentStrength", 0.1f);
+    g_SentimentSaveInterval           = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.SentimentSaveInterval", 10);
+    g_SentimentAnalysisPrompt         = sConfigMgr->GetOption<std::string>("OllamaBotControl.SentimentAnalysisPrompt", "Analyze the sentiment of this message: \"{message}\". Respond only with: POSITIVE, NEGATIVE, or NEUTRAL.");
+    g_SentimentPromptTemplate         = sConfigMgr->GetOption<std::string>("OllamaBotControl.SentimentPromptTemplate", "Your relationship sentiment with {player_name} is {sentiment_value} (0.0=hostile, 0.5=neutral, 1.0=friendly). Use this to guide your tone and response.");
 
     // RAG (Retrieval-Augmented Generation) System
-    g_EnableRAG                       = sConfigMgr->GetOption<bool>("OllamaChat.EnableRAG", false);
-    g_RAGDataPath                     = sConfigMgr->GetOption<std::string>("OllamaChat.RAGDataPath", "rag/");
-    g_RAGMaxRetrievedItems            = sConfigMgr->GetOption<uint32_t>("OllamaChat.RAGMaxRetrievedItems", 3);
-    g_RAGSimilarityThreshold          = sConfigMgr->GetOption<float>("OllamaChat.RAGSimilarityThreshold", 0.3f);
-    g_RAGPromptTemplate               = sConfigMgr->GetOption<std::string>("OllamaChat.RAGPromptTemplate", "RELEVANT INFORMATION:\n{rag_info}\nUse this information to provide accurate and detailed responses when applicable.");
+    g_EnableRAG                       = sConfigMgr->GetOption<bool>("OllamaBotControl.EnableRAG", false);
+    g_RAGDataPath                     = sConfigMgr->GetOption<std::string>("OllamaBotControl.RAGDataPath", "rag/");
+    g_RAGMaxRetrievedItems            = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.RAGMaxRetrievedItems", 3);
+    g_RAGSimilarityThreshold          = sConfigMgr->GetOption<float>("OllamaBotControl.RAGSimilarityThreshold", 0.3f);
+    g_RAGPromptTemplate               = sConfigMgr->GetOption<std::string>("OllamaBotControl.RAGPromptTemplate", "RELEVANT INFORMATION:\n{rag_info}\nUse this information to provide accurate and detailed responses when applicable.");
 
-    g_ThinkModeEnableForModule        = sConfigMgr->GetOption<bool>("OllamaChat.ThinkModeEnableForModule", false);
+    g_ThinkModeEnableForModule        = sConfigMgr->GetOption<bool>("OllamaBotControl.ThinkModeEnableForModule", false);
 
     // Typing Simulation
-    g_EnableTypingSimulation          = sConfigMgr->GetOption<bool>("OllamaChat.EnableTypingSimulation", false);
-    g_TypingSimulationBaseDelay       = sConfigMgr->GetOption<uint32_t>("OllamaChat.TypingSimulationBaseDelay", 1000);
-    g_TypingSimulationDelayPerChar    = sConfigMgr->GetOption<uint32_t>("OllamaChat.TypingSimulationDelayPerChar", 250);
+    g_EnableTypingSimulation          = sConfigMgr->GetOption<bool>("OllamaBotControl.EnableTypingSimulation", false);
+    g_TypingSimulationBaseDelay       = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.TypingSimulationBaseDelay", 1000);
+    g_TypingSimulationDelayPerChar    = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.TypingSimulationDelayPerChar", 250);
 
-    g_EventTypeDefeated           = sConfigMgr->GetOption<std::string>("OllamaChat.EventTypeDefeated", "");
-    g_EventTypeDefeatedPlayer     = sConfigMgr->GetOption<std::string>("OllamaChat.EventTypeDefeatedPlayer", "");
-    g_EventTypePetDefeated        = sConfigMgr->GetOption<std::string>("OllamaChat.EventTypePetDefeated", "");
-    g_EventTypeGotItem            = sConfigMgr->GetOption<std::string>("OllamaChat.EventTypeGotItem", "");
-    g_EventTypeDied               = sConfigMgr->GetOption<std::string>("OllamaChat.EventTypeDied", "");
-    g_EventTypeCompletedQuest     = sConfigMgr->GetOption<std::string>("OllamaChat.EventTypeCompletedQuest", "");
-    g_EventTypeLearnedSpell       = sConfigMgr->GetOption<std::string>("OllamaChat.EventTypeLearnedSpell", "");
-    g_EventTypeRequestedDuel      = sConfigMgr->GetOption<std::string>("OllamaChat.EventTypeRequestedDuel", "");
-    g_EventTypeStartedDueling     = sConfigMgr->GetOption<std::string>("OllamaChat.EventTypeStartedDueling", "");
-    g_EventTypeWonDuel            = sConfigMgr->GetOption<std::string>("OllamaChat.EventTypeWonDuel", "");
-    g_EventTypeLeveledUp          = sConfigMgr->GetOption<std::string>("OllamaChat.EventTypeLeveledUp", "");
-    g_EventTypeAchievement        = sConfigMgr->GetOption<std::string>("OllamaChat.EventTypeAchievement", "");
-    g_EventTypeUsedObject         = sConfigMgr->GetOption<std::string>("OllamaChat.EventTypeUsedObject", "");
+    g_EventTypeDefeated           = sConfigMgr->GetOption<std::string>("OllamaBotControl.EventTypeDefeated", "");
+    g_EventTypeDefeatedPlayer     = sConfigMgr->GetOption<std::string>("OllamaBotControl.EventTypeDefeatedPlayer", "");
+    g_EventTypePetDefeated        = sConfigMgr->GetOption<std::string>("OllamaBotControl.EventTypePetDefeated", "");
+    g_EventTypeGotItem            = sConfigMgr->GetOption<std::string>("OllamaBotControl.EventTypeGotItem", "");
+    g_EventTypeDied               = sConfigMgr->GetOption<std::string>("OllamaBotControl.EventTypeDied", "");
+    g_EventTypeCompletedQuest     = sConfigMgr->GetOption<std::string>("OllamaBotControl.EventTypeCompletedQuest", "");
+    g_EventTypeLearnedSpell       = sConfigMgr->GetOption<std::string>("OllamaBotControl.EventTypeLearnedSpell", "");
+    g_EventTypeRequestedDuel      = sConfigMgr->GetOption<std::string>("OllamaBotControl.EventTypeRequestedDuel", "");
+    g_EventTypeStartedDueling     = sConfigMgr->GetOption<std::string>("OllamaBotControl.EventTypeStartedDueling", "");
+    g_EventTypeWonDuel            = sConfigMgr->GetOption<std::string>("OllamaBotControl.EventTypeWonDuel", "");
+    g_EventTypeLeveledUp          = sConfigMgr->GetOption<std::string>("OllamaBotControl.EventTypeLeveledUp", "");
+    g_EventTypeAchievement        = sConfigMgr->GetOption<std::string>("OllamaBotControl.EventTypeAchievement", "");
+    g_EventTypeUsedObject         = sConfigMgr->GetOption<std::string>("OllamaBotControl.EventTypeUsedObject", "");
 
 
     // Load extra blacklist commands from config (comma-separated list)
-    std::string extraBlacklist = sConfigMgr->GetOption<std::string>("OllamaChat.BlacklistCommands", "");
+    std::string extraBlacklist = sConfigMgr->GetOption<std::string>("OllamaBotControl.BlacklistCommands", "");
     if (!extraBlacklist.empty())
     {
         std::vector<std::string> extraList = SplitString(extraBlacklist, ',');
@@ -551,85 +551,85 @@ void LoadOllamaChatConfig()
         return result;
     };
 
-    g_EnvCommentCreature        = LoadEnvCommentVector("OllamaChat.EnvCommentCreature", { "" });
-    g_EnvCommentGameObject      = LoadEnvCommentVector("OllamaChat.EnvCommentGameObject", { "" });
-    g_EnvCommentEquippedItem    = LoadEnvCommentVector("OllamaChat.EnvCommentEquippedItem", { "" });
-    g_EnvCommentBagItem         = LoadEnvCommentVector("OllamaChat.EnvCommentBagItem", { "" });
-    g_EnvCommentBagItemSell     = LoadEnvCommentVector("OllamaChat.EnvCommentBagItemSell", { "" });
-    g_EnvCommentSpell           = LoadEnvCommentVector("OllamaChat.EnvCommentSpell", { "" });
-    g_EnvCommentQuestArea       = LoadEnvCommentVector("OllamaChat.EnvCommentQuestArea", { "" });
-    g_EnvCommentVendor          = LoadEnvCommentVector("OllamaChat.EnvCommentVendor", { "" });
-    g_EnvCommentQuestgiver      = LoadEnvCommentVector("OllamaChat.EnvCommentQuestgiver", { "" });
-    g_EnvCommentBagSlots        = LoadEnvCommentVector("OllamaChat.EnvCommentBagSlots", { "" });
-    g_EnvCommentDungeon         = LoadEnvCommentVector("OllamaChat.EnvCommentDungeon", { "" });
-    g_EnvCommentUnfinishedQuest = LoadEnvCommentVector("OllamaChat.EnvCommentUnfinishedQuest", { "" });
+    g_EnvCommentCreature        = LoadEnvCommentVector("OllamaBotControl.EnvCommentCreature", { "" });
+    g_EnvCommentGameObject      = LoadEnvCommentVector("OllamaBotControl.EnvCommentGameObject", { "" });
+    g_EnvCommentEquippedItem    = LoadEnvCommentVector("OllamaBotControl.EnvCommentEquippedItem", { "" });
+    g_EnvCommentBagItem         = LoadEnvCommentVector("OllamaBotControl.EnvCommentBagItem", { "" });
+    g_EnvCommentBagItemSell     = LoadEnvCommentVector("OllamaBotControl.EnvCommentBagItemSell", { "" });
+    g_EnvCommentSpell           = LoadEnvCommentVector("OllamaBotControl.EnvCommentSpell", { "" });
+    g_EnvCommentQuestArea       = LoadEnvCommentVector("OllamaBotControl.EnvCommentQuestArea", { "" });
+    g_EnvCommentVendor          = LoadEnvCommentVector("OllamaBotControl.EnvCommentVendor", { "" });
+    g_EnvCommentQuestgiver      = LoadEnvCommentVector("OllamaBotControl.EnvCommentQuestgiver", { "" });
+    g_EnvCommentBagSlots        = LoadEnvCommentVector("OllamaBotControl.EnvCommentBagSlots", { "" });
+    g_EnvCommentDungeon         = LoadEnvCommentVector("OllamaBotControl.EnvCommentDungeon", { "" });
+    g_EnvCommentUnfinishedQuest = LoadEnvCommentVector("OllamaBotControl.EnvCommentUnfinishedQuest", { "" });
 
     // Guild-specific random chatter templates
-    g_GuildEnvCommentGuildMember = LoadEnvCommentVector("OllamaChat.GuildEnvCommentGuildMember", { "" });
-    g_GuildEnvCommentGuildRank = LoadEnvCommentVector("OllamaChat.GuildEnvCommentGuildRank", { "" });
-    g_GuildEnvCommentGuildBank = LoadEnvCommentVector("OllamaChat.GuildEnvCommentGuildBank", { "" });
-    g_GuildEnvCommentGuildMOTD = LoadEnvCommentVector("OllamaChat.GuildEnvCommentGuildMOTD", { "" });
-    g_GuildEnvCommentGuildInfo = LoadEnvCommentVector("OllamaChat.GuildEnvCommentGuildInfo", { "" });
-    g_GuildEnvCommentGuildOnlineMembers = LoadEnvCommentVector("OllamaChat.GuildEnvCommentGuildOnlineMembers", { "" });
-    g_GuildEnvCommentGuildRaid = LoadEnvCommentVector("OllamaChat.GuildEnvCommentGuildRaid", { "" });
-    g_GuildEnvCommentGuildEndgame = LoadEnvCommentVector("OllamaChat.GuildEnvCommentGuildEndgame", { "" });
-    g_GuildEnvCommentGuildStrategy = LoadEnvCommentVector("OllamaChat.GuildEnvCommentGuildStrategy", { "" });
-    g_GuildEnvCommentGuildGroup = LoadEnvCommentVector("OllamaChat.GuildEnvCommentGuildGroup", { "" });
-    g_GuildEnvCommentGuildPvP = LoadEnvCommentVector("OllamaChat.GuildEnvCommentGuildPvP", { "" });
-    g_GuildEnvCommentGuildCommunity = LoadEnvCommentVector("OllamaChat.GuildEnvCommentGuildCommunity", { "" });
+    g_GuildEnvCommentGuildMember = LoadEnvCommentVector("OllamaBotControl.GuildEnvCommentGuildMember", { "" });
+    g_GuildEnvCommentGuildRank = LoadEnvCommentVector("OllamaBotControl.GuildEnvCommentGuildRank", { "" });
+    g_GuildEnvCommentGuildBank = LoadEnvCommentVector("OllamaBotControl.GuildEnvCommentGuildBank", { "" });
+    g_GuildEnvCommentGuildMOTD = LoadEnvCommentVector("OllamaBotControl.GuildEnvCommentGuildMOTD", { "" });
+    g_GuildEnvCommentGuildInfo = LoadEnvCommentVector("OllamaBotControl.GuildEnvCommentGuildInfo", { "" });
+    g_GuildEnvCommentGuildOnlineMembers = LoadEnvCommentVector("OllamaBotControl.GuildEnvCommentGuildOnlineMembers", { "" });
+    g_GuildEnvCommentGuildRaid = LoadEnvCommentVector("OllamaBotControl.GuildEnvCommentGuildRaid", { "" });
+    g_GuildEnvCommentGuildEndgame = LoadEnvCommentVector("OllamaBotControl.GuildEnvCommentGuildEndgame", { "" });
+    g_GuildEnvCommentGuildStrategy = LoadEnvCommentVector("OllamaBotControl.GuildEnvCommentGuildStrategy", { "" });
+    g_GuildEnvCommentGuildGroup = LoadEnvCommentVector("OllamaBotControl.GuildEnvCommentGuildGroup", { "" });
+    g_GuildEnvCommentGuildPvP = LoadEnvCommentVector("OllamaBotControl.GuildEnvCommentGuildPvP", { "" });
+    g_GuildEnvCommentGuildCommunity = LoadEnvCommentVector("OllamaBotControl.GuildEnvCommentGuildCommunity", { "" });
 
     // Guild-specific configuration
-    g_EnableGuildEventChatter = sConfigMgr->GetOption<bool>("OllamaChat.EnableGuildEventChatter", true);
-    g_GuildChatterBotCommentChance = sConfigMgr->GetOption<uint32_t>("OllamaChat.GuildChatterBotCommentChance", 25);
-    g_GuildChatterMaxBotsPerEvent = sConfigMgr->GetOption<uint32_t>("OllamaChat.GuildChatterMaxBotsPerEvent", 2);
+    g_EnableGuildEventChatter = sConfigMgr->GetOption<bool>("OllamaBotControl.EnableGuildEventChatter", true);
+    g_GuildChatterBotCommentChance = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.GuildChatterBotCommentChance", 25);
+    g_GuildChatterMaxBotsPerEvent = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.GuildChatterMaxBotsPerEvent", 2);
 
     // Guild-specific event templates
-    g_GuildEventTypeLevelUp = sConfigMgr->GetOption<std::string>("OllamaChat.GuildEventTypeLevelUp", "");
-    g_GuildEventTypeDungeonComplete = sConfigMgr->GetOption<std::string>("OllamaChat.GuildEventTypeDungeonComplete", "");
-    g_GuildEventTypeEpicGear = sConfigMgr->GetOption<std::string>("OllamaChat.GuildEventTypeEpicGear", "");
-    g_GuildEventTypeRareGear = sConfigMgr->GetOption<std::string>("OllamaChat.GuildEventTypeRareGear", "");
-    g_GuildEventTypeGuildJoin = sConfigMgr->GetOption<std::string>("OllamaChat.GuildEventTypeGuildJoin", "");
-    g_GuildEventTypeGuildLogin = sConfigMgr->GetOption<std::string>("OllamaChat.GuildEventTypeGuildLogin", "");
-    g_GuildEventTypeGuildLeave = sConfigMgr->GetOption<std::string>("OllamaChat.GuildEventTypeGuildLeave", "");
-    g_GuildEventTypeGuildPromotion = sConfigMgr->GetOption<std::string>("OllamaChat.GuildEventTypeGuildPromotion", "");
-    g_GuildEventTypeGuildDemotion = sConfigMgr->GetOption<std::string>("OllamaChat.GuildEventTypeGuildDemotion", "");
+    g_GuildEventTypeLevelUp = sConfigMgr->GetOption<std::string>("OllamaBotControl.GuildEventTypeLevelUp", "");
+    g_GuildEventTypeDungeonComplete = sConfigMgr->GetOption<std::string>("OllamaBotControl.GuildEventTypeDungeonComplete", "");
+    g_GuildEventTypeEpicGear = sConfigMgr->GetOption<std::string>("OllamaBotControl.GuildEventTypeEpicGear", "");
+    g_GuildEventTypeRareGear = sConfigMgr->GetOption<std::string>("OllamaBotControl.GuildEventTypeRareGear", "");
+    g_GuildEventTypeGuildJoin = sConfigMgr->GetOption<std::string>("OllamaBotControl.GuildEventTypeGuildJoin", "");
+    g_GuildEventTypeGuildLogin = sConfigMgr->GetOption<std::string>("OllamaBotControl.GuildEventTypeGuildLogin", "");
+    g_GuildEventTypeGuildLeave = sConfigMgr->GetOption<std::string>("OllamaBotControl.GuildEventTypeGuildLeave", "");
+    g_GuildEventTypeGuildPromotion = sConfigMgr->GetOption<std::string>("OllamaBotControl.GuildEventTypeGuildPromotion", "");
+    g_GuildEventTypeGuildDemotion = sConfigMgr->GetOption<std::string>("OllamaBotControl.GuildEventTypeGuildDemotion", "");
 
     // Load chance variables for normal events
-    g_EventTypeDefeated_Chance = sConfigMgr->GetOption<int>("OllamaChat.EventTypeDefeated_Chance", 0);
-    g_EventTypeDefeatedPlayer_Chance = sConfigMgr->GetOption<int>("OllamaChat.EventTypeDefeatedPlayer_Chance", 0);
-    g_EventTypePetDefeated_Chance = sConfigMgr->GetOption<int>("OllamaChat.EventTypePetDefeated_Chance", 0);
-    g_EventTypeGotItem_Chance = sConfigMgr->GetOption<int>("OllamaChat.EventTypeGotItem_Chance", 0);
-    g_EventTypeDied_Chance = sConfigMgr->GetOption<int>("OllamaChat.EventTypeDied_Chance", 0);
-    g_EventTypeCompletedQuest_Chance = sConfigMgr->GetOption<int>("OllamaChat.EventTypeCompletedQuest_Chance", 0);
-    g_EventTypeLearnedSpell_Chance = sConfigMgr->GetOption<int>("OllamaChat.EventTypeLearnedSpell_Chance", 0);
-    g_EventTypeRequestedDuel_Chance = sConfigMgr->GetOption<int>("OllamaChat.EventTypeRequestedDuel_Chance", 0);
-    g_EventTypeStartedDueling_Chance = sConfigMgr->GetOption<int>("OllamaChat.EventTypeStartedDueling_Chance", 0);
-    g_EventTypeWonDuel_Chance = sConfigMgr->GetOption<int>("OllamaChat.EventTypeWonDuel_Chance", 0);
-    g_EventTypeLeveledUp_Chance = sConfigMgr->GetOption<int>("OllamaChat.EventTypeLeveledUp_Chance", 0);
-    g_EventTypeAchievement_Chance = sConfigMgr->GetOption<int>("OllamaChat.EventTypeAchievement_Chance", 0);
-    g_EventTypeUsedObject_Chance = sConfigMgr->GetOption<int>("OllamaChat.EventTypeUsedObject_Chance", 0);
+    g_EventTypeDefeated_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.EventTypeDefeated_Chance", 0);
+    g_EventTypeDefeatedPlayer_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.EventTypeDefeatedPlayer_Chance", 0);
+    g_EventTypePetDefeated_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.EventTypePetDefeated_Chance", 0);
+    g_EventTypeGotItem_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.EventTypeGotItem_Chance", 0);
+    g_EventTypeDied_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.EventTypeDied_Chance", 0);
+    g_EventTypeCompletedQuest_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.EventTypeCompletedQuest_Chance", 0);
+    g_EventTypeLearnedSpell_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.EventTypeLearnedSpell_Chance", 0);
+    g_EventTypeRequestedDuel_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.EventTypeRequestedDuel_Chance", 0);
+    g_EventTypeStartedDueling_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.EventTypeStartedDueling_Chance", 0);
+    g_EventTypeWonDuel_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.EventTypeWonDuel_Chance", 0);
+    g_EventTypeLeveledUp_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.EventTypeLeveledUp_Chance", 0);
+    g_EventTypeAchievement_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.EventTypeAchievement_Chance", 0);
+    g_EventTypeUsedObject_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.EventTypeUsedObject_Chance", 0);
 
     // Load chance variables for guild events
-    g_GuildEventTypeEpicGear_Chance = sConfigMgr->GetOption<int>("OllamaChat.GuildEventTypeEpicGear_Chance", 0);
-    g_GuildEventTypeRareGear_Chance = sConfigMgr->GetOption<int>("OllamaChat.GuildEventTypeRareGear_Chance", 0);
-    g_GuildEventTypeGuildJoin_Chance = sConfigMgr->GetOption<int>("OllamaChat.GuildEventTypeGuildJoin_Chance", 0);
-    g_GuildEventTypeGuildLogin_Chance = sConfigMgr->GetOption<int>("OllamaChat.GuildEventTypeGuildLogin_Chance", 0);
-    g_GuildEventTypeGuildLeave_Chance = sConfigMgr->GetOption<int>("OllamaChat.GuildEventTypeGuildLeave_Chance", 0);
-    g_GuildEventTypeGuildPromotion_Chance = sConfigMgr->GetOption<int>("OllamaChat.GuildEventTypeGuildPromotion_Chance", 0);
-    g_GuildEventTypeGuildDemotion_Chance = sConfigMgr->GetOption<int>("OllamaChat.GuildEventTypeGuildDemotion_Chance", 0);
-    g_GuildEventTypeGuildAchievement_Chance = sConfigMgr->GetOption<int>("OllamaChat.GuildEventTypeGuildAchievement_Chance", 0);
-    g_GuildEventTypeLevelUp_Chance = sConfigMgr->GetOption<int>("OllamaChat.GuildEventTypeLevelUp_Chance", 0);
-    g_GuildEventTypeDungeonComplete_Chance = sConfigMgr->GetOption<int>("OllamaChat.GuildEventTypeDungeonComplete_Chance", 0);
+    g_GuildEventTypeEpicGear_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.GuildEventTypeEpicGear_Chance", 0);
+    g_GuildEventTypeRareGear_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.GuildEventTypeRareGear_Chance", 0);
+    g_GuildEventTypeGuildJoin_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.GuildEventTypeGuildJoin_Chance", 0);
+    g_GuildEventTypeGuildLogin_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.GuildEventTypeGuildLogin_Chance", 0);
+    g_GuildEventTypeGuildLeave_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.GuildEventTypeGuildLeave_Chance", 0);
+    g_GuildEventTypeGuildPromotion_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.GuildEventTypeGuildPromotion_Chance", 0);
+    g_GuildEventTypeGuildDemotion_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.GuildEventTypeGuildDemotion_Chance", 0);
+    g_GuildEventTypeGuildAchievement_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.GuildEventTypeGuildAchievement_Chance", 0);
+    g_GuildEventTypeLevelUp_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.GuildEventTypeLevelUp_Chance", 0);
+    g_GuildEventTypeDungeonComplete_Chance = sConfigMgr->GetOption<int>("OllamaBotControl.GuildEventTypeDungeonComplete_Chance", 0);
 
 
     // Cooldown time for events
-    g_EventCooldownTime = sConfigMgr->GetOption<uint32_t>("OllamaChat.EventCooldownTime", 10);
+    g_EventCooldownTime = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.EventCooldownTime", 10);
 
     // Channel disable settings
-    g_DisableForCustomChannels = sConfigMgr->GetOption<bool>("OllamaChat.DisableForCustomChannels", false);
-    g_DisableForSayYell = sConfigMgr->GetOption<bool>("OllamaChat.DisableForSayYell", false);
-    g_DisableForGuild = sConfigMgr->GetOption<bool>("OllamaChat.DisableForGuild", false);
-    g_DisableForParty = sConfigMgr->GetOption<bool>("OllamaChat.DisableForParty", false);
+    g_DisableForCustomChannels = sConfigMgr->GetOption<bool>("OllamaBotControl.DisableForCustomChannels", false);
+    g_DisableForSayYell = sConfigMgr->GetOption<bool>("OllamaBotControl.DisableForSayYell", false);
+    g_DisableForGuild = sConfigMgr->GetOption<bool>("OllamaBotControl.DisableForGuild", false);
+    g_DisableForParty = sConfigMgr->GetOption<bool>("OllamaBotControl.DisableForParty", false);
 
     LOG_INFO("server.loading",
              "[Ollama Chat] Config loaded: Enabled = {}, SayDistance = {}, YellDistance = {}, "

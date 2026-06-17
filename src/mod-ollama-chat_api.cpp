@@ -184,9 +184,9 @@ std::string QueryOllamaAPI(const std::string& prompt)
     if (botReply.find("<think>") != std::string::npos || botReply.find("</think>") != std::string::npos)
     {
         LOG_ERROR("server.loading", "[OllamaChat] ERROR: Unclosed <think> tags detected in response. This usually means the model's output was truncated.");
-        LOG_ERROR("server.loading", "[OllamaChat] SOLUTION: Set 'OllamaChat.ThinkModeEnableForModule = 1' in mod_ollama_chat.conf");
-        LOG_ERROR("server.loading", "[OllamaChat] SOLUTION: Set 'OllamaChat.NumPredict = 0' (unlimited tokens) in mod_ollama_chat.conf");
-        LOG_ERROR("server.loading", "[OllamaChat] SOLUTION: Set 'OllamaChat.NumCtx = 0' (model default context) in mod_ollama_chat.conf");
+        LOG_ERROR("server.loading", "[OllamaChat] SOLUTION: Set 'OllamaBotControl.ThinkModeEnableForModule = 1' in mod_ollama_chat.conf");
+        LOG_ERROR("server.loading", "[OllamaChat] SOLUTION: Set 'OllamaBotControl.NumPredict = 0' (unlimited tokens) in mod_ollama_chat.conf");
+        LOG_ERROR("server.loading", "[OllamaChat] SOLUTION: Set 'OllamaBotControl.NumCtx = 0' (model default context) in mod_ollama_chat.conf");
         if(g_DebugEnabled)
         {
             LOG_INFO("server.loading", "[OllamaChat] Debug: Partial response with think tags: {}", botReply);
