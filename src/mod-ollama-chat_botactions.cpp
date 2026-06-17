@@ -236,27 +236,48 @@ namespace
         }
     }
 
-    // Replicate AttackAction::Attack for an arbitrary GUID (the "attack my target"
-    // action only reads the master's selection, so it cannot target a chosen guid).
-    void ExecuteAttack(Player* bot, PlayerbotAI* botAI, uint64_t targetGuidRaw)
+    bool ValidAttackTarget(Player* bot, Unit* u)
     {
-        if (!targetGuidRaw)
-            return;
+        return u && u->IsInWorld() && !u->isDead() && bot->IsValidAttackTarget(u);
+    }
 
-        ObjectGuid guid(targetGuidRaw);
-        Unit* target = botAI->GetUnit(guid);
+    // Resolve who to attack. Replicates AttackAction::Attack for an arbitrary unit
+    // (the "attack my target" action only reads the master's selection). The model
+    // often omits the guid, so fall back to (a) the commanding player's current
+    // target ("help me" while you fight something), then (b) the nearest hostile.
+    void ExecuteAttack(Player* bot, PlayerbotAI* botAI, Player* sender, uint64_t targetGuidRaw)
+    {
+        Unit* target = targetGuidRaw ? botAI->GetUnit(ObjectGuid(targetGuidRaw)) : nullptr;
 
-        // GUID re-validation: reject hallucinated / invalid targets silently.
-        if (!target || !target->IsInWorld() || target->isDead())
-            return;
-        if (!bot->IsValidAttackTarget(target))
-            return;
-        if (!bot->IsWithinLOSInMap(target))
-            return;
+        if (!ValidAttackTarget(bot, target) && sender && sender->GetTarget())
+        {
+            Unit* u = botAI->GetUnit(sender->GetTarget());
+            if (ValidAttackTarget(bot, u))
+                target = u;
+        }
 
-        bot->SetSelection(guid);
+        if (!ValidAttackTarget(bot, target))
+        {
+            Unit* nearest = nullptr;
+            float best = 99999.0f;
+            GuidVector hostiles = botAI->GetAiObjectContext()->GetValue<GuidVector>("nearest hostile npcs")->Get();
+            for (ObjectGuid const& g : hostiles)
+            {
+                Unit* u = botAI->GetUnit(g);
+                if (!ValidAttackTarget(bot, u))
+                    continue;
+                float d = bot->GetDistance(u);
+                if (d < best) { best = d; nearest = u; }
+            }
+            target = nearest;
+        }
+
+        if (!ValidAttackTarget(bot, target))
+            return;   // nothing valid to attack
+
+        bot->SetSelection(target->GetGUID());
         botAI->GetAiObjectContext()->GetValue<Unit*>("current target")->Set(target);
-        botAI->GetAiObjectContext()->GetValue<GuidVector>("prioritized targets")->Set({ guid });
+        botAI->GetAiObjectContext()->GetValue<GuidVector>("prioritized targets")->Set({ target->GetGUID() });
         botAI->ChangeEngine(BOT_STATE_COMBAT);
         bot->Attack(target, bot->IsWithinMeleeRange(target));
     }
@@ -304,7 +325,7 @@ namespace
 
         if (cmd.type == "attack")
         {
-            ExecuteAttack(bot, botAI, cmd.targetGuid);
+            ExecuteAttack(bot, botAI, sender, cmd.targetGuid);
         }
         else if (cmd.type == "follow")
         {
