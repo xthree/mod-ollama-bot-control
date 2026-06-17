@@ -21,8 +21,11 @@ std::string ExtractTextBetweenDoubleQuotes(const std::string& response)
     return response;
 }
 
-// Function to perform the API call.
-std::string QueryOllamaAPI(const std::string& prompt)
+// Function to perform the API call. When rawOutput is true the model's full
+// output is returned verbatim (used by the action pipeline, which needs the raw
+// JSON); when false the legacy chat extraction (text between the first two
+// double-quotes) is applied.
+static std::string QueryOllamaImpl(const std::string& prompt, bool rawOutput)
 {
     // Initialize our custom HTTP client
     static OllamaHttpClient httpClient;
@@ -178,7 +181,8 @@ std::string QueryOllamaAPI(const std::string& prompt)
 
     std::string botReply = extractedResponse.str();
 
-    botReply = ExtractTextBetweenDoubleQuotes(botReply);
+    if (!rawOutput)
+        botReply = ExtractTextBetweenDoubleQuotes(botReply);
 
     // Check for unclosed think tags
     if (botReply.find("<think>") != std::string::npos || botReply.find("</think>") != std::string::npos)
@@ -218,6 +222,18 @@ std::string QueryOllamaAPI(const std::string& prompt)
     }
 
     return botReply;
+}
+
+// Chat path: extract the spoken reply from the model output (legacy behaviour).
+std::string QueryOllamaAPI(const std::string& prompt)
+{
+    return QueryOllamaImpl(prompt, false);
+}
+
+// Action path: return the model's raw output (full JSON) untouched.
+std::string QueryOllamaRawAPI(const std::string& prompt)
+{
+    return QueryOllamaImpl(prompt, true);
 }
 
 // Helper function to check if a response is valid (not empty and not an error)
