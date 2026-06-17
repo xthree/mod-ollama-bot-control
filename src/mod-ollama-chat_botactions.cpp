@@ -115,6 +115,33 @@ static std::string SharedConvoText(uint64_t botGuid)
     return s;
 }
 
+// --- Persistent pose holding (sit/sleep) --------------------------------------
+// SetStandState alone doesn't stick: the bot's AI re-stands it next tick. We keep
+// a per-bot target pose and re-apply it every world tick while the control lease
+// is active; when the lease lapses (or the bot is released) we stop, and normal
+// AI stands it back up.
+static std::unordered_map<uint64_t, uint8_t> g_BotPosedState;   // botGuid -> UNIT_STAND_STATE_*
+
+static void SetPose(uint64_t botGuid, uint8_t state) { g_BotPosedState[botGuid] = state; }
+static void ClearPose(uint64_t botGuid)              { g_BotPosedState.erase(botGuid); }
+
+static void MaintainPoses()
+{
+    for (auto it = g_BotPosedState.begin(); it != g_BotPosedState.end(); )
+    {
+        Player* bot = ObjectAccessor::FindPlayer(ObjectGuid(it->first));
+        PlayerbotAI* botAI = bot ? PlayerbotsMgr::instance().GetPlayerbotAI(bot) : nullptr;
+        if (!bot || !botAI || !botAI->IsExternallyControlled())
+        {
+            it = g_BotPosedState.erase(it);     // released -> let it stand on its own
+            continue;
+        }
+        if (bot->getStandState() != it->second)
+            bot->SetStandState(it->second);
+        ++it;
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Worker-thread -> world-thread action queue.
 // ---------------------------------------------------------------------------
@@ -135,11 +162,18 @@ namespace
     {
         std::string m = message;
         std::transform(m.begin(), m.end(), m.begin(), [](unsigned char c){ return static_cast<char>(std::tolower(c)); });
-        static const char* kEmotes[] = { "dance", "cheer", "wave", "laugh", "bow", "roar",
-                                         "salute", "clap", "applaud", "cry", "flex", "kneel", "point", "sleep" };
+        static const char* kEmotes[] = { "sit", "sleep", "lay down", "lie down", "stand up", "stand",
+                                         "dance", "cheer", "wave", "laugh", "bow", "roar", "salute",
+                                         "clap", "applaud", "cry", "flex", "kneel", "point", "rude",
+                                         "train", "wink", "thank", "hug", "victory", "flirt", "chicken" };
         for (const char* e : kEmotes)
             if (m.find(e) != std::string::npos)
-                return e;
+            {
+                std::string r = e;
+                if (r == "lay down" || r == "lie down") return "sleep";
+                if (r == "stand up") return "stand";
+                return r;
+            }
         return "";
     }
 
@@ -202,9 +236,11 @@ std::string BuildBotActionPrompt(Player* bot, Player* sender, const std::string&
       << "- attack a unit: action=\"attack\", guid=<that unit's guid number>.\n"
       << "- follow " << senderName << ": action=\"follow\".\n"
       << "- move somewhere: action=\"moveto\" with x,y,z (to come to " << senderName << " use their x,y,z above).\n"
-      << "- a gesture or pose: action=\"emote\", emote=any standard WoW emote name, e.g. sit, "
-      << "sleep, stand, dance, bow, wave, rude, train, wink, kneel, cheer, laugh, salute, flex, "
-      << "point, cry, shrug, thank, hug, roar, clap, chicken, victory.\n"
+      << "- a gesture or pose, ONLY if they explicitly ask you to do that gesture by name "
+      << "(e.g. \"sit\", \"dance\", \"bow\", \"wave\"): action=\"emote\" and emote=<that name> "
+      << "(any standard WoW emote: sit, sleep, stand, dance, bow, wave, rude, train, wink, kneel, "
+      << "cheer, laugh, salute, flex, point, thank, hug, roar, clap, chicken, victory). "
+      << "Do NOT emote just because you are chatting about something.\n"
       << "When in doubt, use action=\"none\" and just talk. Always include a natural, in-character \"say\" "
       << "of ONE or TWO short sentences — speak like a real person in chat, do not ramble.";
     return p.str();
@@ -381,7 +417,7 @@ namespace
         while (!name.empty() && (name.front() == '/' || name.front() == ' ')) name.erase(name.begin());
         while (!name.empty() && name.back() == ' ') name.pop_back();
         if (name.empty())
-            name = "wave";
+            return;   // no resolvable emote -> do nothing (don't randomly wave)
 
         // Persistent stand-state poses.
         if (name == "sit" || name == "sitdown")                                  { bot->SetStandState(UNIT_STAND_STATE_SIT);   return; }
@@ -502,6 +538,7 @@ namespace
         if (cmd.type == "attack" || cmd.type == "follow" || cmd.type == "moveto")
         {
             botAI->SetExternalControl(g_ControlDurationSeconds);
+            ClearPose(pa.botGuid);   // a movement/combat command means stop holding a pose
             // Strip the random bot's autonomous movement/questing strategies so they
             // don't fight the commanded action (e.g. "move random"/"new rpg" vs follow,
             // which makes the bot jitter). They are re-added by ResetStrategies once the
@@ -545,22 +582,33 @@ namespace
             std::transform(elow.begin(), elow.end(), elow.begin(),
                            [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
-            // Persistent poses must hold: take a lease, stop autonomous movement and
-            // stand the bot still, or its AI immediately stands back up.
-            bool stayPose = (elow == "sit" || elow == "sitdown" || elow == "sleep" ||
-                             elow == "lay" || elow == "laydown" || elow == "liedown");
-            if (stayPose)
+            if (elow.empty())
             {
+                // Model picked emote but gave no resolvable name -> just the spoken reply,
+                // no random wave.
+            }
+            else if (elow == "sit" || elow == "sitdown" || elow == "sleep" ||
+                     elow == "lay" || elow == "laydown" || elow == "liedown")
+            {
+                // Persistent pose: lease + hold it (MaintainPoses re-applies each tick),
+                // stop moving, and remember the target stand-state.
                 botAI->SetExternalControl(g_ControlDurationSeconds);
                 botAI->ChangeStrategy("-follow,-grind,-new rpg,-rpg,-move random,-travel,-lfg,-bg,-start duel,+stay",
                                       BOT_STATE_NON_COMBAT);
                 bot->GetMotionMaster()->Clear();
                 bot->StopMoving();
+                SetPose(pa.botGuid, (elow == "sit" || elow == "sitdown") ? UNIT_STAND_STATE_SIT
+                                                                         : UNIT_STAND_STATE_SLEEP);
+                ExecuteEmote(bot, botAI, name, pa.message);
+                RecordBotAction(pa.botGuid, "is " + std::string(elow.substr(0,3) == "sit" ? "sitting" : "lying down"));
             }
-
-            ExecuteEmote(bot, botAI, name, pa.message);
-            RecordBotAction(bot->GetGUID().GetRawValue(),
-                            "performed the " + (name.empty() ? std::string("wave") : name) + " emote");
+            else
+            {
+                if (elow == "stand" || elow == "standup" || elow == "getup")
+                    ClearPose(pa.botGuid);   // getting up cancels a held pose
+                ExecuteEmote(bot, botAI, name, pa.message);
+                RecordBotAction(pa.botGuid, "performed the " + elow + " emote");
+            }
         }
 
         if (g_DebugEnabled)
@@ -581,4 +629,7 @@ void DrainBotActionQueue()
         ExecuteBotAction(local.front());
         local.pop();
     }
+
+    // Hold any sit/sleep poses against the bot's AI standing them back up.
+    MaintainPoses();
 }
