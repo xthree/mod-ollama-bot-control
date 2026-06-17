@@ -1421,7 +1421,8 @@ void PlayerBotChatHandler::ProcessChat(Player* player, uint32_t /*type*/, uint32
             uint64_t aBotGuid = bot->GetGUID().GetRawValue();
             uint64_t aSenderGuid = senderGuid;
             int aSource = static_cast<int>(sourceLocal);
-            std::thread([aBotGuid, aSenderGuid, aSource, actionPrompt, actionSchema]() {
+            std::string aMsg = msg;
+            std::thread([aBotGuid, aSenderGuid, aSource, actionPrompt, actionSchema, aMsg]() {
                 try {
                     std::string response = QueryOllamaRawAPI(actionPrompt, actionSchema);
                     if (g_DebugEnabled)
@@ -1436,7 +1437,7 @@ void PlayerBotChatHandler::ProcessChat(Player* player, uint32_t /*type*/, uint32
                         LOG_INFO("server.loading", "[OllamaBotControl] parse ok={} type='{}' guid={} hasPos={} say='{}'",
                                  ok, cmd.type, cmd.targetGuid, cmd.hasPos, say);
                     if (ok)
-                        EnqueueBotAction(aBotGuid, aSenderGuid, aSource, say, cmd);
+                        EnqueueBotAction(aBotGuid, aSenderGuid, aSource, say, aMsg, cmd);
                 } catch (const std::exception& e) {
                     LOG_ERROR("server.loading", "[OllamaBotControl] action worker exception: {}", e.what());
                 } catch (...) {

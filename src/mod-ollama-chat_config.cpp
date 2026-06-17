@@ -96,6 +96,7 @@ std::string g_EventChatterPromptTemplate;
 std::string g_ChatPromptTemplate;
 std::string g_ChatExtraInfoTemplate;
 std::vector<std::string> g_AllowedActions;
+uint32_t g_ControlDurationSeconds = 180;
 
 // --------------------------------------------
 // Personality and Prompt Data
@@ -531,6 +532,8 @@ void LoadOllamaChatConfig()
         std::string allowed = sConfigMgr->GetOption<std::string>("OllamaBotControl.AllowedActions", "attack,follow,moveto,emote");
         g_AllowedActions = SplitString(allowed, ',');
     }
+
+    g_ControlDurationSeconds = sConfigMgr->GetOption<uint32_t>("OllamaBotControl.ControlDurationSeconds", 180);
 
     LoadPersonalityTemplatesFromDB();
 

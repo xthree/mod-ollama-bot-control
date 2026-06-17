@@ -8,6 +8,7 @@
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "PlayerbotMgr.h"
+#include "PlayerbotAI.h"
 #include <fmt/core.h>
 
 using namespace Acore::ChatCommands;
@@ -453,6 +454,8 @@ bool OllamaChatConfigCommand::HandleOllamaOptOutCommand(ChatHandler* handler, st
     if (!bot)
         return true;
     SetBotActionOptIn(bot, false);
+    if (PlayerbotAI* botAI = PlayerbotsMgr::instance().GetPlayerbotAI(bot))
+        botAI->ClearExternalControl();   // release any active lease immediately
     handler->SendSysMessage(fmt::format("OllamaBotControl: Bot '{}' opted OUT of LLM action control.", botName));
     return true;
 }

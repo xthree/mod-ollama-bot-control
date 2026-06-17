@@ -31,9 +31,10 @@ std::string BotActionSchema();
 bool ParseBotActionResponse(const std::string& response, std::string& sayOut, BotActionCommand& cmdOut);
 
 // Enqueue a resolved action for world-thread execution (safe to call from a
-// worker thread — only this and the drain touch the queue).
+// worker thread — only this and the drain touch the queue). `message` is the
+// original player text (used to recover an emote name the model may have omitted).
 void EnqueueBotAction(uint64_t botGuid, uint64_t senderGuid, int sourceLocal,
-                      const std::string& say, const BotActionCommand& cmd);
+                      const std::string& say, const std::string& message, const BotActionCommand& cmd);
 
 // Execute all queued actions on the world thread. Call from a WorldScript::OnUpdate.
 void DrainBotActionQueue();

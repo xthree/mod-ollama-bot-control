@@ -54,8 +54,22 @@ namespace
         uint64_t senderGuid;
         int sourceLocal;
         std::string say;
+        std::string message;
         BotActionCommand cmd;
     };
+
+    // Recover an emote name from the player's message when the model omitted it.
+    std::string EmoteFromMessage(const std::string& message)
+    {
+        std::string m = message;
+        std::transform(m.begin(), m.end(), m.begin(), [](unsigned char c){ return static_cast<char>(std::tolower(c)); });
+        static const char* kEmotes[] = { "dance", "cheer", "wave", "laugh", "bow", "roar",
+                                         "salute", "clap", "applaud", "cry", "flex", "kneel", "point", "sleep" };
+        for (const char* e : kEmotes)
+            if (m.find(e) != std::string::npos)
+                return e;
+        return "";
+    }
 
     std::mutex g_BotActionQueueMutex;
     std::queue<PendingBotAction> g_BotActionQueue;
@@ -71,10 +85,10 @@ namespace
 }
 
 void EnqueueBotAction(uint64_t botGuid, uint64_t senderGuid, int sourceLocal,
-                      const std::string& say, const BotActionCommand& cmd)
+                      const std::string& say, const std::string& message, const BotActionCommand& cmd)
 {
     std::lock_guard<std::mutex> lock(g_BotActionQueueMutex);
-    g_BotActionQueue.push(PendingBotAction{ botGuid, senderGuid, sourceLocal, say, cmd });
+    g_BotActionQueue.push(PendingBotAction{ botGuid, senderGuid, sourceLocal, say, message, cmd });
 }
 
 // ---------------------------------------------------------------------------
@@ -273,6 +287,13 @@ namespace
             return;
         }
 
+        // Take a time-boxed control lease for state/strategy-based actions so the
+        // engine doesn't yank the bot back to autonomy before it acts. Emotes are
+        // instantaneous and need no lease. The lease auto-expires (renewed per
+        // command), so the bot resumes its own life once you stop interacting.
+        if (cmd.type == "attack" || cmd.type == "follow" || cmd.type == "moveto")
+            botAI->SetExternalControl(g_ControlDurationSeconds);
+
         if (cmd.type == "attack")
         {
             ExecuteAttack(bot, botAI, cmd.targetGuid);
@@ -300,7 +321,11 @@ namespace
         }
         else if (cmd.type == "emote")
         {
-            std::string name = cmd.param.empty() ? "wave" : cmd.param;
+            std::string name = cmd.param;
+            if (name.empty())
+                name = EmoteFromMessage(pa.message);   // model omitted the emote field
+            if (name.empty())
+                name = "wave";
             botAI->DoSpecificAction("emote", Event(), false, name);
         }
 

@@ -96,6 +96,7 @@ extern std::string g_ChatExtraInfoTemplate;
 // Bot action control (LLM-driven actions)
 // --------------------------------------------
 extern std::vector<std::string> g_AllowedActions;  // allow-list of command types (empty = allow v1 set)
+extern uint32_t g_ControlDurationSeconds;          // external-control lease length, renewed per command
 
 // --------------------------------------------
 // Personality and Prompt Data

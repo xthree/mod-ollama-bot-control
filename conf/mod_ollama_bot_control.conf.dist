@@ -918,6 +918,16 @@ OllamaBotControl.RAGPromptTemplate = "RELEVANT INFORMATION:\n{rag_info}\nUse thi
 #     Default:     "attack,follow,moveto,emote"
 OllamaBotControl.AllowedActions = "attack,follow,moveto,emote"
 #
+# OllamaBotControl.ControlDurationSeconds
+#     Description: How long (seconds) an opted-in bot stays under external control
+#                  after a movement/combat command (attack/follow/moveto). The lease
+#                  is renewed on every command; once it lapses with no further
+#                  interaction the bot returns to its own autonomous behaviour (it is
+#                  never left frozen). Requires the mod-playerbots external-control
+#                  patch (xthree/mod-playerbots branch external-control).
+#     Default:     180
+OllamaBotControl.ControlDurationSeconds = 180
+#
 # Opt-in is per-bot and runtime-controlled (not a config key):
 #     .ollama optin <botName>     - enable LLM action control for a bot
 #     .ollama optout <botName>    - disable it
