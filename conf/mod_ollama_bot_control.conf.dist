@@ -904,3 +904,22 @@ OllamaBotControl.RAGSimilarityThreshold = 0.3
 #     Description: Template for including RAG information in bot prompts.
 #     Placeholders (named): {rag_info}
 OllamaBotControl.RAGPromptTemplate = "RELEVANT INFORMATION:\n{rag_info}\nUse this information to provide accurate and detailed responses when applicable."
+
+#
+###############################################################################
+# LLM BOT ACTION CONTROL (mod-ollama-bot-control)
+###############################################################################
+#
+# OllamaBotControl.AllowedActions
+#     Description: Comma-separated allow-list of LLM action command types an
+#                  opted-in bot may execute. Any command type not in this list
+#                  is rejected silently. Empty = allow the full v1 set.
+#     v1 actions:  attack, follow, moveto, emote
+#     Default:     "attack,follow,moveto,emote"
+OllamaBotControl.AllowedActions = "attack,follow,moveto,emote"
+#
+# Opt-in is per-bot and runtime-controlled (not a config key):
+#     .ollama optin <botName>     - enable LLM action control for a bot
+#     .ollama optout <botName>    - disable it
+#     .ollama optstatus <botName> - show current state
+# (Opt-in state is in-memory for now and resets on worldserver restart.)

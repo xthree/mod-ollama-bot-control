@@ -1,6 +1,7 @@
 #include "mod-ollama-chat_random.h"
 #include "mod-ollama-chat_config.h"
 #include "mod-ollama-chat_handler.h"
+#include "mod-ollama-chat_botactions.h"
 #include "mod-ollama-chat_sentiment.h"
 #include "Log.h"
 #include "Player.h"
@@ -38,6 +39,10 @@ void OllamaBotRandomChatter::OnUpdate(uint32 diff)
 {
     if (!g_Enable)
         return;
+
+    // Execute LLM-decided bot actions queued from worker threads. MUST run on the
+    // world thread (DoSpecificAction / Attack / MovePoint mutate combat/movement state).
+    DrainBotActionQueue();
 
     if (g_ConversationHistorySaveInterval > 0)
     {

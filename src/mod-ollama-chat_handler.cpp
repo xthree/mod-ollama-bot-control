@@ -31,6 +31,7 @@
 #include "mod-ollama-chat-utilities.h"
 #include "mod-ollama-chat_sentiment.h"
 #include "mod-ollama-chat_rag.h"
+#include "mod-ollama-chat_botactions.h"
 #include <iomanip>
 #include "SpellMgr.h"
 #include "SpellInfo.h"
@@ -1406,6 +1407,28 @@ void PlayerBotChatHandler::ProcessChat(Player* player, uint32_t /*type*/, uint32
             LOG_INFO("server.loading", "[Ollama Chat] Bot {} (distance: {}) is set to respond.", bot->GetName(), distance);
         }
         if (bot == nullptr) {
+            continue;
+        }
+        // LLM action control: an opted-in bot routes into the action pipeline
+        // (GUID-grounded prompt -> Ollama -> parse {say,command} -> enqueue for
+        // world-thread execution) instead of the chat-only reply path below.
+        if (IsBotActionOptIn(bot))
+        {
+            std::string actionPrompt = BuildBotActionPrompt(bot, player, msg);
+            uint64_t aBotGuid = bot->GetGUID().GetRawValue();
+            uint64_t aSenderGuid = senderGuid;
+            int aSource = static_cast<int>(sourceLocal);
+            std::thread([aBotGuid, aSenderGuid, aSource, actionPrompt]() {
+                try {
+                    std::string response = QueryOllamaAPI(actionPrompt);
+                    if (response.empty())
+                        return;
+                    std::string say;
+                    BotActionCommand cmd;
+                    if (ParseBotActionResponse(response, say, cmd))
+                        EnqueueBotAction(aBotGuid, aSenderGuid, aSource, say, cmd);
+                } catch (...) {}
+            }).detach();
             continue;
         }
         std::string prompt = GenerateBotPrompt(bot, msg, player);

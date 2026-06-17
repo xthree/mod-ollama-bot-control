@@ -2,6 +2,7 @@
 #include "mod-ollama-chat_config.h"
 #include "mod-ollama-chat_sentiment.h"
 #include "mod-ollama-chat_personality.h"
+#include "mod-ollama-chat_botactions.h"
 #include "Chat.h"
 #include "Config.h"
 #include "ObjectAccessor.h"
@@ -36,7 +37,10 @@ ChatCommandTable OllamaChatConfigCommand::GetCommands() const
     {
         { "reload",      HandleOllamaReloadCommand,  SEC_ADMINISTRATOR, Console::Yes },
         { "sentiment",   ollamaSentimentCommandTable },
-        { "personality", ollamaPersonalityCommandTable }
+        { "personality", ollamaPersonalityCommandTable },
+        { "optin",       HandleOllamaOptInCommand,     SEC_ADMINISTRATOR, Console::Yes },
+        { "optout",      HandleOllamaOptOutCommand,    SEC_ADMINISTRATOR, Console::Yes },
+        { "optstatus",   HandleOllamaOptStatusCommand, SEC_ADMINISTRATOR, Console::Yes }
     };
 
     static ChatCommandTable commandTable =
@@ -413,6 +417,53 @@ bool OllamaChatConfigCommand::HandleOllamaPersonalityListCommand(ChatHandler* ha
         handler->SendSysMessage(fmt::format("  - {}{}", personality, manualTag));
         handler->SendSysMessage(fmt::format("    {}", prompt));
     }
-    
+
+    return true;
+}
+
+static Player* ResolveBotByName(ChatHandler* handler, const std::string& botName)
+{
+    Player* bot = ObjectAccessor::FindPlayerByName(botName);
+    if (!bot)
+    {
+        handler->SendSysMessage(fmt::format("OllamaBotControl: Bot '{}' not found (must be online).", botName));
+        return nullptr;
+    }
+    if (!PlayerbotsMgr::instance().GetPlayerbotAI(bot))
+    {
+        handler->SendSysMessage(fmt::format("OllamaBotControl: '{}' is not a bot.", botName));
+        return nullptr;
+    }
+    return bot;
+}
+
+bool OllamaChatConfigCommand::HandleOllamaOptInCommand(ChatHandler* handler, std::string botName)
+{
+    Player* bot = ResolveBotByName(handler, botName);
+    if (!bot)
+        return true;
+    SetBotActionOptIn(bot, true);
+    handler->SendSysMessage(fmt::format("OllamaBotControl: Bot '{}' opted IN to LLM action control.", botName));
+    return true;
+}
+
+bool OllamaChatConfigCommand::HandleOllamaOptOutCommand(ChatHandler* handler, std::string botName)
+{
+    Player* bot = ResolveBotByName(handler, botName);
+    if (!bot)
+        return true;
+    SetBotActionOptIn(bot, false);
+    handler->SendSysMessage(fmt::format("OllamaBotControl: Bot '{}' opted OUT of LLM action control.", botName));
+    return true;
+}
+
+bool OllamaChatConfigCommand::HandleOllamaOptStatusCommand(ChatHandler* handler, std::string botName)
+{
+    Player* bot = ResolveBotByName(handler, botName);
+    if (!bot)
+        return true;
+    bool optedIn = IsBotActionOptIn(bot);
+    handler->SendSysMessage(fmt::format("OllamaBotControl: Bot '{}' is {} LLM action control.",
+                            botName, optedIn ? "opted IN to" : "opted OUT of"));
     return true;
 }

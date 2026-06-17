@@ -93,6 +93,11 @@ extern std::string g_ChatPromptTemplate;
 extern std::string g_ChatExtraInfoTemplate;
 
 // --------------------------------------------
+// Bot action control (LLM-driven actions)
+// --------------------------------------------
+extern std::vector<std::string> g_AllowedActions;  // allow-list of command types (empty = allow v1 set)
+
+// --------------------------------------------
 // Personality and Prompt Data
 // --------------------------------------------
 extern std::unordered_map<uint64_t, std::string> g_BotPersonalityList;

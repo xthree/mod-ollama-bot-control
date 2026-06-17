@@ -17,6 +17,9 @@ public:
     static bool HandleOllamaPersonalityGetCommand(ChatHandler* handler, std::string botName);
     static bool HandleOllamaPersonalitySetCommand(ChatHandler* handler, std::string botName, std::string personality);
     static bool HandleOllamaPersonalityListCommand(ChatHandler* handler);
+    static bool HandleOllamaOptInCommand(ChatHandler* handler, std::string botName);
+    static bool HandleOllamaOptOutCommand(ChatHandler* handler, std::string botName);
+    static bool HandleOllamaOptStatusCommand(ChatHandler* handler, std::string botName);
 };
 
 #endif // MOD_OLLAMA_CHAT_COMMAND_H
