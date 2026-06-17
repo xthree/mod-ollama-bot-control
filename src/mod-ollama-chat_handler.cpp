@@ -1414,6 +1414,8 @@ void PlayerBotChatHandler::ProcessChat(Player* player, uint32_t /*type*/, uint32
         // world-thread execution) instead of the chat-only reply path below.
         if (IsBotActionOptIn(bot))
         {
+            if (g_DebugEnabled)
+                LOG_INFO("server.loading", "[OllamaBotControl] Bot {} opted-in -> action pipeline", bot->GetName());
             std::string actionPrompt = BuildBotActionPrompt(bot, player, msg);
             uint64_t aBotGuid = bot->GetGUID().GetRawValue();
             uint64_t aSenderGuid = senderGuid;
@@ -1421,13 +1423,24 @@ void PlayerBotChatHandler::ProcessChat(Player* player, uint32_t /*type*/, uint32
             std::thread([aBotGuid, aSenderGuid, aSource, actionPrompt]() {
                 try {
                     std::string response = QueryOllamaAPI(actionPrompt);
+                    if (g_DebugEnabled)
+                        LOG_INFO("server.loading", "[OllamaBotControl] action LLM resp (len {}): {}",
+                                 response.size(), response.substr(0, std::min<size_t>(response.size(), 400)));
                     if (response.empty())
                         return;
                     std::string say;
                     BotActionCommand cmd;
-                    if (ParseBotActionResponse(response, say, cmd))
+                    bool ok = ParseBotActionResponse(response, say, cmd);
+                    if (g_DebugEnabled)
+                        LOG_INFO("server.loading", "[OllamaBotControl] parse ok={} type='{}' guid={} hasPos={} say='{}'",
+                                 ok, cmd.type, cmd.targetGuid, cmd.hasPos, say);
+                    if (ok)
                         EnqueueBotAction(aBotGuid, aSenderGuid, aSource, say, cmd);
-                } catch (...) {}
+                } catch (const std::exception& e) {
+                    LOG_ERROR("server.loading", "[OllamaBotControl] action worker exception: {}", e.what());
+                } catch (...) {
+                    LOG_ERROR("server.loading", "[OllamaBotControl] action worker unknown exception");
+                }
             }).detach();
             continue;
         }

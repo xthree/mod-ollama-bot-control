@@ -244,12 +244,20 @@ namespace
 
         Player* sender = ObjectAccessor::FindPlayer(ObjectGuid(pa.senderGuid));
 
+        const BotActionCommand& cmd = pa.cmd;
+        if (g_DebugEnabled)
+            LOG_INFO("server.loading", "[OllamaBotControl] drain: bot {} type='{}' guid={} say='{}'",
+                     bot->GetName(), cmd.type, cmd.targetGuid, pa.say);
+
         // Speak the reply first (the bot answers in natural speech AND acts).
         SpeakReply(botAI, sender, pa.sourceLocal, pa.say);
 
-        const BotActionCommand& cmd = pa.cmd;
         if (!ActionAllowed(cmd.type))
+        {
+            if (g_DebugEnabled)
+                LOG_INFO("server.loading", "[OllamaBotControl] action '{}' not allowed/none -> skipped", cmd.type);
             return;
+        }
 
         if (cmd.type == "attack")
         {
