@@ -19,6 +19,7 @@
 #include <nlohmann/json.hpp>
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdlib>
 #include <deque>
 #include <mutex>
@@ -234,8 +235,10 @@ std::string BuildBotActionPrompt(Player* bot, Player* sender, const std::string&
       << "and simply reply in \"say\" like a person would (answer questions, react, joke). "
       << "ONLY choose a physical action when " << senderName << " clearly asks for that specific thing right now:\n"
       << "- attack a unit: action=\"attack\", guid=<that unit's guid number>.\n"
-      << "- follow " << senderName << ": action=\"follow\".\n"
-      << "- move somewhere: action=\"moveto\" with x,y,z (to come to " << senderName << " use their x,y,z above).\n"
+      << "- follow " << senderName << " around: action=\"follow\".\n"
+      << "- come over to " << senderName << " (walk up and stop near them, NOT follow): action=\"come\".\n"
+      << "- stop and hold your current spot: action=\"stay\".\n"
+      << "- go to a specific spot: action=\"moveto\" with x,y,z.\n"
       << "- a gesture or pose, ONLY if they explicitly ask you to do that gesture by name "
       << "(e.g. \"sit\", \"dance\", \"bow\", \"wave\"): action=\"emote\" and emote=<that name> "
       << "(any standard WoW emote: sit, sleep, stand, dance, bow, wave, rude, train, wink, kneel, "
@@ -253,7 +256,7 @@ std::string BotActionSchema()
       "type":"object",
       "properties":{
         "say":{"type":"string","maxLength":200},
-        "action":{"type":"string","enum":["attack","follow","moveto","emote","none"]},
+        "action":{"type":"string","enum":["attack","follow","come","stay","moveto","emote","none"]},
         "guid":{"type":"integer"},
         "x":{"type":"number"},
         "y":{"type":"number"},
@@ -524,28 +527,26 @@ namespace
         RecordSharedConvo(pa.botGuid, sender ? sender->GetName() : "Someone", pa.message);
         RecordSharedConvo(pa.botGuid, bot->GetName(), pa.say);
 
-        if (!ActionAllowed(cmd.type))
+        // Engagement: being addressed pauses the bot's autonomous questing so it stops
+        // and attends to you naturally — no explicit "stay" needed. A real command holds
+        // it for the full control duration; plain conversation gets a brief pause. The
+        // strip removes only the autonomous movers (grind/rpg/etc.), leaving an active
+        // follow/stay/pose intact.
+        bool isCommand = ActionAllowed(cmd.type);
+        botAI->SetExternalControl(isCommand ? g_ControlDurationSeconds : 60);
+        botAI->ChangeStrategy("-grind,-new rpg,-rpg,-move random,-travel,-lfg,-bg,-start duel",
+                              BOT_STATE_NON_COMBAT);
+
+        if (!isCommand)
         {
             if (g_DebugEnabled)
-                LOG_INFO("server.loading", "[OllamaBotControl] action '{}' not allowed/none -> skipped", cmd.type);
-            return;
+                LOG_INFO("server.loading", "[OllamaBotControl] bot {} engaged (conversation), no action", bot->GetName());
+            return;   // none: engaged + chatting, no physical action
         }
 
-        // Take a time-boxed control lease for state/strategy-based actions so the
-        // engine doesn't yank the bot back to autonomy before it acts. Emotes are
-        // instantaneous and need no lease. The lease auto-expires (renewed per
-        // command), so the bot resumes its own life once you stop interacting.
-        if (cmd.type == "attack" || cmd.type == "follow" || cmd.type == "moveto")
-        {
-            botAI->SetExternalControl(g_ControlDurationSeconds);
-            ClearPose(pa.botGuid);   // a movement/combat command means stop holding a pose
-            // Strip the random bot's autonomous movement/questing strategies so they
-            // don't fight the commanded action (e.g. "move random"/"new rpg" vs follow,
-            // which makes the bot jitter). They are re-added by ResetStrategies once the
-            // lease lapses, restoring normal autonomy.
-            botAI->ChangeStrategy("-grind,-new rpg,-rpg,-move random,-travel,-lfg,-bg,-start duel",
-                                  BOT_STATE_NON_COMBAT);
-        }
+        // A movement/combat command means stop holding a sit/sleep pose.
+        if (cmd.type == "attack" || cmd.type == "follow" || cmd.type == "moveto" || cmd.type == "come")
+            ClearPose(pa.botGuid);
 
         if (cmd.type == "attack")
         {
@@ -574,6 +575,32 @@ namespace
                 bot->GetMotionMaster()->MovePoint(0, x, y, z);
                 RecordBotAction(bot->GetGUID().GetRawValue(), "moved to a location");
             }
+        }
+        else if (cmd.type == "come")
+        {
+            // Walk up to the player but stop a couple of yards short (not on top of them),
+            // and just hold there afterward (this is NOT a follow).
+            if (sender)
+            {
+                float px = sender->GetPositionX(), py = sender->GetPositionY(), pz = sender->GetPositionZ();
+                float dx = bot->GetPositionX() - px, dy = bot->GetPositionY() - py;
+                float len = std::sqrt(dx * dx + dy * dy);
+                float stop = 2.5f;
+                float tx = px, ty = py;
+                if (len > 0.1f) { tx = px + dx / len * stop; ty = py + dy / len * stop; }
+                botAI->ChangeStrategy("-follow", BOT_STATE_NON_COMBAT);
+                bot->GetMotionMaster()->Clear();
+                bot->GetMotionMaster()->MovePoint(0, tx, ty, pz);
+                RecordBotAction(bot->GetGUID().GetRawValue(), "came over to " + sender->GetName());
+            }
+        }
+        else if (cmd.type == "stay")
+        {
+            // Hold the current position (not a follow). +stay keeps the bot put.
+            botAI->ChangeStrategy("-follow,+stay", BOT_STATE_NON_COMBAT);
+            bot->GetMotionMaster()->Clear();
+            bot->StopMoving();
+            RecordBotAction(bot->GetGUID().GetRawValue(), "stayed put");
         }
         else if (cmd.type == "emote")
         {

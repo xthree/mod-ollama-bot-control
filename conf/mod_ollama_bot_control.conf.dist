@@ -914,9 +914,9 @@ OllamaBotControl.RAGPromptTemplate = "RELEVANT INFORMATION:\n{rag_info}\nUse thi
 #     Description: Comma-separated allow-list of LLM action command types an
 #                  opted-in bot may execute. Any command type not in this list
 #                  is rejected silently. Empty = allow the full v1 set.
-#     v1 actions:  attack, follow, moveto, emote
-#     Default:     "attack,follow,moveto,emote"
-OllamaBotControl.AllowedActions = "attack,follow,moveto,emote"
+#     v1 actions:  attack, follow, come, stay, moveto, emote
+#     Default:     "attack,follow,come,stay,moveto,emote"
+OllamaBotControl.AllowedActions = "attack,follow,come,stay,moveto,emote"
 #
 # OllamaBotControl.ControlDurationSeconds
 #     Description: How long (seconds) an opted-in bot stays under external control

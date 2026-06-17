@@ -529,7 +529,7 @@ void LoadOllamaChatConfig()
 
     // Allow-list of LLM action command types (comma-separated). Empty = allow the v1 set.
     {
-        std::string allowed = sConfigMgr->GetOption<std::string>("OllamaBotControl.AllowedActions", "attack,follow,moveto,emote");
+        std::string allowed = sConfigMgr->GetOption<std::string>("OllamaBotControl.AllowedActions", "attack,follow,come,stay,moveto,emote");
         g_AllowedActions = SplitString(allowed, ',');
     }
 
