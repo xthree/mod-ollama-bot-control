@@ -327,21 +327,50 @@ std::string BotActionSchema()
     })JSON";
 }
 
+// Clean a model's "say": small models sometimes leak the prompt's world-state
+// (nearby-unit guids + distances) or JSON tail into the reply. Strip that and cap.
+static std::string SanitizeSay(std::string s)
+{
+    size_t p = s.find("\"}");                 // leaked JSON tail
+    if (p != std::string::npos) s.erase(p);
+    int run = 0; size_t runStart = std::string::npos;   // first 6+ digit run = leaked guid
+    for (size_t i = 0; i < s.size(); ++i)
+    {
+        if (std::isdigit(static_cast<unsigned char>(s[i])))
+        {
+            if (run == 0) runStart = i;
+            if (++run >= 6) { s.erase(runStart); break; }
+        }
+        else run = 0;
+    }
+    if (s.size() > 240) { s.erase(240); size_t sp = s.rfind(' '); if (sp != std::string::npos && sp > 40) s.erase(sp); }
+    while (!s.empty() && (s.back() == ' ' || s.back() == '"' || s.back() == '}' || s.back() == ',')) s.pop_back();
+    return s;
+}
+
 // ---------------------------------------------------------------------------
 // Response parsing: extract the first balanced {...} object, then read fields.
 // ---------------------------------------------------------------------------
 bool ParseBotActionResponse(const std::string& response, std::string& sayOut, BotActionCommand& cmdOut)
 {
-    size_t start = response.find('{');
+    // Normalize smart quotes some small models use to close the JSON string.
+    std::string resp = response;
+    for (const char* sm : { "\xE2\x80\x9C", "\xE2\x80\x9D" })
+    {
+        std::string from = sm; size_t fp = 0;
+        while ((fp = resp.find(from, fp)) != std::string::npos) { resp.replace(fp, from.size(), "\""); fp += 1; }
+    }
+
+    size_t start = resp.find('{');
     if (start == std::string::npos)
         return false;
 
     int depth = 0;
     size_t end = std::string::npos;
     bool inStr = false, esc = false;
-    for (size_t i = start; i < response.size(); ++i)
+    for (size_t i = start; i < resp.size(); ++i)
     {
-        char c = response[i];
+        char c = resp[i];
         if (inStr)
         {
             if (esc)            esc = false;
@@ -356,7 +385,7 @@ bool ParseBotActionResponse(const std::string& response, std::string& sayOut, Bo
     if (end == std::string::npos)
         return false;
 
-    std::string jsonStr = response.substr(start, end - start + 1);
+    std::string jsonStr = resp.substr(start, end - start + 1);
 
     try
     {
@@ -364,7 +393,7 @@ bool ParseBotActionResponse(const std::string& response, std::string& sayOut, Bo
 
         // Output is schema-constrained to a flat {say, action, guid?, x,y,z?, emote?}.
         if (j.contains("say") && j["say"].is_string())
-            sayOut = j["say"].get<std::string>();
+            sayOut = SanitizeSay(j["say"].get<std::string>());
 
         if (j.contains("action") && j["action"].is_string())
             cmdOut.type = j["action"].get<std::string>();
