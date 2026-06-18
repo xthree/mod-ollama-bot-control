@@ -47,6 +47,11 @@ extern uint32_t    g_OllamaNumPredict;
 extern float       g_OllamaTemperature;
 extern float       g_OllamaTopP;
 extern float       g_OllamaRepeatPenalty;
+extern int32_t     g_OllamaTopK;             // 0 = unset (don't send)
+extern float       g_OllamaMinP;             // 0 = unset
+extern int32_t     g_OllamaRepeatLastN;      // 0 = unset
+extern float       g_OllamaPresencePenalty;  // 0 = unset
+extern float       g_OllamaFrequencyPenalty; // 0 = unset
 extern uint32_t    g_OllamaNumCtx;
 extern uint32_t    g_OllamaNumThreads;
 extern std::string g_OllamaStop;

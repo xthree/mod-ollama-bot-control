@@ -76,6 +76,26 @@ static std::string QueryOllamaImpl(const std::string& prompt, bool rawOutput, co
         options["repeat_penalty"] = g_OllamaRepeatPenalty;
         hasOptions = true;
     }
+    if (g_OllamaTopK > 0) {
+        options["top_k"] = g_OllamaTopK;
+        hasOptions = true;
+    }
+    if (g_OllamaMinP > 0.0f) {
+        options["min_p"] = g_OllamaMinP;
+        hasOptions = true;
+    }
+    if (g_OllamaRepeatLastN > 0) {
+        options["repeat_last_n"] = g_OllamaRepeatLastN;
+        hasOptions = true;
+    }
+    if (g_OllamaPresencePenalty > 0.0f) {
+        options["presence_penalty"] = g_OllamaPresencePenalty;
+        hasOptions = true;
+    }
+    if (g_OllamaFrequencyPenalty > 0.0f) {
+        options["frequency_penalty"] = g_OllamaFrequencyPenalty;
+        hasOptions = true;
+    }
     if (g_OllamaNumCtx > 0) {
         options["num_ctx"] = g_OllamaNumCtx;
         hasOptions = true;
