@@ -445,6 +445,10 @@ bool OllamaChatConfigCommand::HandleOllamaOptInCommand(ChatHandler* handler, std
     if (!bot)
         return true;
     SetBotActionOptIn(bot, true);
+    // [mod-ollama-bot-control V0 testability] Set the durable engine flag so V0's
+    // recycle/logout/teleport/master-wipe guards fire immediately on opt-in.
+    if (PlayerbotAI* botAI = PlayerbotsMgr::instance().GetPlayerbotAI(bot))
+        botAI->SetLLMControlled(true);
     handler->SendSysMessage(fmt::format("OllamaBotControl: Bot '{}' opted IN to LLM action control.", botName));
     return true;
 }
@@ -456,7 +460,12 @@ bool OllamaChatConfigCommand::HandleOllamaOptOutCommand(ChatHandler* handler, st
         return true;
     SetBotActionOptIn(bot, false);
     if (PlayerbotAI* botAI = PlayerbotsMgr::instance().GetPlayerbotAI(bot))
+    {
         botAI->ClearExternalControl();   // release any active lease immediately
+        // [mod-ollama-bot-control V0 testability] Unconditionally restore native
+        // strategies for ANY character type (lobotomy-bug fix exercised here).
+        botAI->SetLLMControlled(false);  // calls DisableLLMControl internally
+    }
     handler->SendSysMessage(fmt::format("OllamaBotControl: Bot '{}' opted OUT of LLM action control.", botName));
     return true;
 }
