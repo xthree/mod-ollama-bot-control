@@ -32,6 +32,63 @@
 > - `AiPlayerbot.GuildFeedback = 0` (disables guild event chatting)
 > - `AiPlayerbot.RandomBotSayWithoutMaster = 0` (disables bots talking without a master)
 
+## Bot action control (what this fork adds)
+
+Upstream mod-ollama-chat makes bots **talk**. This fork makes an opted-in bot also
+**act** on natural language — you say *"attack that boar"*, *"come dance with me"*,
+or *"follow me"* and the bot resolves the intent, replies in character, and performs
+the in-game action. No keyword syntax.
+
+**How it works (structured output, not tool calling):** the bot's chat hook builds a
+world-state prompt (its persona, recent conversation, nearby units) and asks Ollama for
+a single JSON object constrained by a **JSON Schema** (`format=<schema>` — grammar-level
+constrained decoding). Because the grammar enforces the shape, *any* model works and you
+can hot-swap them freely; we are **not** using the model's native tool/function-calling
+API (that would lock you to tool-tuned models). A hand-written executor maps the returned
+`action` to a playerbot command and runs it on the world thread (chat hooks fire
+off-thread, so actions are marshaled via an `EnqueueBotAction`/`DrainBotActionQueue`
+queue drained in `OnUpdate`).
+
+**Actions (v1):** `attack` (falls back to your target / nearest hostile), `follow`,
+`come`, `stay`, `moveto`, `emote` (sit/sleep/stand stand-states, `/dismount`, and ~150
+text emotes; poses are re-applied each tick). The allow-list is the `AllowedActions`
+config key.
+
+**Companion engine fork (required).** Driving an *ungrouped random* bot through the
+public `DoSpecificAction` API alone doesn't stick — mod-playerbots yanks it back to
+autonomy. This module therefore depends on a small tracked fork of the engine:
+**[`xthree/mod-playerbots` branch `external-control`](https://github.com/xthree/mod-playerbots/tree/external-control)**,
+which adds a self-expiring "external control lease"
+(`SetExternalControl` / `ClearExternalControl` / `IsExternallyControlled`). The lease
+length is `ControlDurationSeconds` (renewed on each command); when it lapses the bot
+returns to normal mod-playerbots AI on its own. **Both forks must be built together.**
+
+**GM commands (added by this fork):**
+
+| Command | Effect |
+|---|---|
+| `.ollama optin <bot>` | Opt a bot into LLM action control. |
+| `.ollama optout <bot>` | Opt it back out. |
+| `.ollama optstatus` | List opted-in bots. |
+| `.ollama persona <bot> <free text>` | Give the bot a free-text personality (clears with no text; resets the bot's memory on set). |
+| `.ollama reload` | Re-read the module conf live (model + sampling are all hot-tunable). |
+
+Bring a bot to you with the playerbots commands, e.g. `.playerbots bot addclass <class>`
+then `.summon <bot>`. Opt-in and persona are in-memory (reset on worldserver restart).
+
+**Config keys of note** (`mod_ollama_bot_control.conf`): `Model`, `Url`, `NumPredict`,
+`NumCtx` (Ollama defaults to a tiny 2048 if unset — set it), the sampling knobs
+`Temperature` / `TopP` / `TopK` / `MinP` / `RepeatPenalty` / `RepeatLastN` /
+`PresencePenalty` / `FrequencyPenalty`, `ControlDurationSeconds` (the lease), and
+`AllowedActions`.
+
+**Models tried** (Ollama on an RTX 4090): `llama3.1:latest` (grounded + obedient —
+recommended default), `qwen3:4b` (fast, reliable JSON, a touch repetitive),
+`gemma3:4b` (leaked world-state guids into replies — `SanitizeSay` mitigates),
+`Cydonia-24B` (rich personality, but RP-flaky on actions and writes prose in the emote
+field). A reproducible build / deploy / tuning guide lives in the `xthree-homelab` repo
+at `docs/runbooks/ollama-bot-control.md`.
+
 ## Overview
 
 ***mod-ollama-chat*** is an AzerothCore module that enhances the Player Bots module by integrating external language model (LLM) support via the Ollama API. This module enables player bots to generate dynamic, in-character chat responses using advanced natural language processing locally on your computer (or remotely hosted). Bots are enriched with personality traits, random chatter triggers, and context-aware replies that mimic the language and lore of World of Warcraft.
